@@ -12,7 +12,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import HTMLResponse
 from core.bus import SystemBus
 from modules.files import FilesModule
@@ -108,6 +108,29 @@ async def api_command(data: dict):
         return {"error": "empty command"}
     result = await brain.process(cmd)
     return {"input": cmd, "result": result}
+
+@app.post("/api/upload")
+async def api_upload(file: UploadFile = File(...)):
+    """Загрузка файла — сохраняет в ai-os/uploads/"""
+    import os
+    upload_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")
+    os.makedirs(upload_dir, exist_ok=True)
+    save_path = os.path.join(upload_dir, file.filename)
+    content = await file.read()
+    with open(save_path, "wb") as f:
+        f.write(content)
+    size = len(content)
+    # Анализируем файл через brain
+    ext = os.path.splitext(file.filename)[1].lower()
+    analysis = f"Файл '{file.filename}' загружен ({size} байт). Путь: {save_path}"
+    if ext in ('.txt', '.py', '.js', '.json', '.md', '.csv', '.log', '.xml', '.html', '.css'):
+        try:
+            text = content.decode('utf-8', errors='replace')[:3000]
+            analysis += f"\nСодержимое (первые 3000 символов):\n{text}"
+        except:
+            pass
+    result = await brain.process(f"Загружен файл: {file.filename}, размер: {size} байт, путь: {save_path}")
+    return {"filename": file.filename, "size": size, "path": save_path, "analysis": analysis, "ai_response": result}
 
 
 DASHBOARD_HTML = """<!DOCTYPE html>
@@ -286,6 +309,8 @@ animation:bgMove 20s ease-in-out infinite alternate}
 <div class="input-area">
 <div class="input-row">
 <button class="btn-mic" id="micBtn" onclick="toggleMic()" title="Голосовой ввод">&#127908;</button>
+<button class="btn-mic" onclick="document.getElementById('fileInp').click()" title="Прикрепить файл">&#128206;</button>
+<input type="file" id="fileInp" style="display:none" onchange="uploadFile(this)">
 <input type="text" class="input-f" id="inp" placeholder="Напиши или скажи голосом..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();send()}">
 <button class="btn-send" onclick="send()" title="Отправить">&#8593;</button>
 </div>
@@ -390,6 +415,27 @@ const d=await r.json();hideTyping();addMsg(fmtResult(d),'ai')}
 catch(e){hideTyping();addMsg('<span style="color:var(--red)">Ошибка: '+e.message+'</span>','ai')}}
 
 function quick(t){I.value=t;send()}
+
+async function uploadFile(input){
+if(!input.files||!input.files[0])return;
+const file=input.files[0];
+addMsg('&#128206; '+file.name+' ('+Math.round(file.size/1024)+' KB)','user');
+showTyping();
+const fd=new FormData();fd.append('file',file);
+try{
+const r=await fetch('/api/upload',{method:'POST',body:fd});
+const d=await r.json();hideTyping();
+const frag=document.createElement('div');
+let html='<div style="margin-bottom:8px">&#9989; Файл <strong>'+d.filename+'</strong> загружен</div>';
+html+='<div class="scard"><div class="scard-title">Файл</div>';
+html+='<div class="scard-row"><span class="sc-l">Имя</span><span class="sc-v">'+d.filename+'</span></div>';
+html+='<div class="scard-row"><span class="sc-l">Размер</span><span class="sc-v">'+Math.round(d.size/1024)+' KB</span></div>';
+html+='<div class="scard-row"><span class="sc-l">Путь</span><span class="sc-v" style="font-size:11px;word-break:break-all">'+d.path+'</span></div>';
+html+='</div>';
+if(d.ai_response&&typeof d.ai_response==='string')html+='<div style="margin-top:8px">'+d.ai_response+'</div>';
+frag.innerHTML=html;addMsg(frag,'ai');
+}catch(e){hideTyping();addMsg('Ошибка загрузки: '+e.message,'ai')}
+input.value='';}
 
 async function init(){
 try{
