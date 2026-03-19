@@ -5,4 +5,5 @@ logs/
 versions/
 memory/trainer_stats.json
 memory/health_log.json
+memory/schedule.json
 exports/
