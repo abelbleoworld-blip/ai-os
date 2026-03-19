@@ -1,0 +1,184 @@
+{
+  "module": "watchdog",
+  "entries": [
+    {
+      "id": 1,
+      "title": "Проверка целостности системы",
+      "content": "sfc /scannow — проверка системных файлов. DISM /Online /Cleanup-Image /CheckHealth — быстрая проверка. DISM /Online /Cleanup-Image /RestoreHealth — восстановление. Запускать от админа",
+      "tags": [
+        "sfc",
+        "dism",
+        "целостность"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.532289",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 2,
+      "title": "Журнал событий",
+      "content": "Event Viewer: eventvwr.msc. Критические ошибки: Get-EventLog -LogName System -EntryType Error -Newest 20. Приложения: Get-EventLog -LogName Application -EntryType Error -Newest 20",
+      "tags": [
+        "event log",
+        "журнал",
+        "ошибки"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.548066",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 3,
+      "title": "Здоровье диска",
+      "content": "SMART статус: wmic diskdrive get status,model. PowerShell: Get-PhysicalDisk | Select FriendlyName,HealthStatus,OperationalStatus. CrystalDiskInfo — детальный SMART",
+      "tags": [
+        "диск",
+        "smart",
+        "здоровье"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.558740",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 4,
+      "title": "Автоматическое обслуживание",
+      "content": "Windows Maintenance: автоочистка, дефрагментация, диагностика. Запуск вручную: MSchedExe.exe Start. Настройка: Control Panel → Security and Maintenance → Maintenance",
+      "tags": [
+        "обслуживание",
+        "maintenance"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.563722",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 5,
+      "title": "Мониторинг ресурсов",
+      "content": "Встроенные: resmon (Resource Monitor), perfmon (Performance Monitor). Счётчики: typeperf '\\Processor(_Total)\\% Processor Time' — CPU в реальном времени",
+      "tags": [
+        "мониторинг",
+        "ресурсы",
+        "perfmon"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.579386",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 6,
+      "title": "Проверка целостности системы",
+      "content": "sfc /scannow — проверка системных файлов. DISM /Online /Cleanup-Image /CheckHealth — быстрая проверка. DISM /Online /Cleanup-Image /RestoreHealth — восстановление. Запускать от админа",
+      "tags": [
+        "sfc",
+        "dism",
+        "целостность"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.747505",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 7,
+      "title": "Журнал событий",
+      "content": "Event Viewer: eventvwr.msc. Критические ошибки: Get-EventLog -LogName System -EntryType Error -Newest 20. Приложения: Get-EventLog -LogName Application -EntryType Error -Newest 20",
+      "tags": [
+        "event log",
+        "журнал",
+        "ошибки"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.778825",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 8,
+      "title": "Здоровье диска",
+      "content": "SMART статус: wmic diskdrive get status,model. PowerShell: Get-PhysicalDisk | Select FriendlyName,HealthStatus,OperationalStatus. CrystalDiskInfo — детальный SMART",
+      "tags": [
+        "диск",
+        "smart",
+        "здоровье"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.806892",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 9,
+      "title": "Автоматическое обслуживание",
+      "content": "Windows Maintenance: автоочистка, дефрагментация, диагностика. Запуск вручную: MSchedExe.exe Start. Настройка: Control Panel → Security and Maintenance → Maintenance",
+      "tags": [
+        "обслуживание",
+        "maintenance"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.826190",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 10,
+      "title": "Мониторинг ресурсов",
+      "content": "Встроенные: resmon (Resource Monitor), perfmon (Performance Monitor). Счётчики: typeperf '\\Processor(_Total)\\% Processor Time' — CPU в реальном времени",
+      "tags": [
+        "мониторинг",
+        "ресурсы",
+        "perfmon"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.857942",
+      "used_count": 0,
+      "rating": 0
+    }
+  ],
+  "sources": [
+    {
+      "name": "Windows Health",
+      "url": "https://learn.microsoft.com/en-us/windows/security/operating-system-security/system-security/",
+      "description": "Здоровье и безопасность Windows",
+      "added": "2026-03-19T16:37:36.532289"
+    },
+    {
+      "name": "Event Log Docs",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/eventlog/event-logging",
+      "description": "Журнал событий Windows",
+      "added": "2026-03-19T16:37:36.532289"
+    },
+    {
+      "name": "Windows Health",
+      "url": "https://learn.microsoft.com/en-us/windows/security/operating-system-security/system-security/",
+      "description": "Здоровье и безопасность Windows",
+      "added": "2026-03-19T16:43:46.747505"
+    },
+    {
+      "name": "Event Log Docs",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/eventlog/event-logging",
+      "description": "Журнал событий Windows",
+      "added": "2026-03-19T16:43:46.747505"
+    }
+  ],
+  "solutions": {
+    "система нестабильна": {
+      "solution": "1. sfc /scannow + DISM /RestoreHealth 2. Проверить Event Viewer на критические ошибки 3. Проверить температуру (перегрев) 4. Проверить RAM: mdsched.exe (Windows Memory Diagnostic) 5. Проверить диск: chkdsk C: /f",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:46.873578"
+    },
+    "место на диске заканчивается": {
+      "solution": "1. cleanmgr /d C (Очистка диска) 2. Удалить старые точки восстановления: vssadmin delete shadows /for=C: /oldest 3. Dism /Cleanup-Image /StartComponentCleanup 4. Найти большие файлы 5. Перенести данные на другой диск",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:46.904996"
+    }
+  },
+  "updated_at": "2026-03-19T16:43:46.936433"
+}

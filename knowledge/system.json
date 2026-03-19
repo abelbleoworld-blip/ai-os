@@ -1,0 +1,262 @@
+{
+  "module": "system",
+  "entries": [
+    {
+      "id": 1,
+      "title": "Информация о железе",
+      "content": "systeminfo — полная информация. wmic cpu get name,cores,maxclockspeed — CPU. wmic memorychip get capacity,speed,manufacturer — RAM. wmic diskdrive get model,size — диски. Get-ComputerInfo — всё через PowerShell",
+      "tags": [
+        "железо",
+        "hardware",
+        "инфо"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.215647",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 2,
+      "title": "Температура компонентов",
+      "content": "Windows не показывает температуру по умолчанию. WMI: Get-CimInstance MSAcpi_ThermalZoneTemperature -Namespace root/wmi (не всегда работает). Надёжнее: HWiNFO64, Open Hardware Monitor, или LibreHardwareMonitor (open source)",
+      "tags": [
+        "температура",
+        "нагрев",
+        "thermal"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.227888",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 3,
+      "title": "BIOS/UEFI информация",
+      "content": "wmic bios get smbiosbiosversion,releasedate — версия BIOS. msinfo32 — полная информация. Обновление BIOS — только с сайта производителя!",
+      "tags": [
+        "bios",
+        "uefi",
+        "firmware"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.244280",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 4,
+      "title": "Оперативная память",
+      "content": "Максимум RAM зависит от: 1. Версия Windows (Home — 128GB, Pro — 2TB) 2. Материнская плата 3. Процессор. Проверить: wmic memphysical get maxcapacity. Частота: wmic memorychip get speed",
+      "tags": [
+        "ram",
+        "память",
+        "оперативная"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.247301",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 5,
+      "title": "SSD vs HDD оптимизация",
+      "content": "SSD: отключить дефрагментацию (включить TRIM). Проверить TRIM: fsutil behavior query disabledeletenotify (0 = включен). HDD: дефрагментация помогает. defrag C: /O — оптимизация по типу диска",
+      "tags": [
+        "ssd",
+        "hdd",
+        "оптимизация",
+        "диск"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.247301",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 6,
+      "title": "Энергопотребление",
+      "content": "powercfg /energy — отчёт об энергопотреблении. powercfg /batteryreport — отчёт о батарее. Планы: powercfg /list. Высокая производительность: powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c",
+      "tags": [
+        "энергия",
+        "батарея",
+        "питание"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.247301",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 7,
+      "title": "Обновления Windows",
+      "content": "Get-WindowsUpdate (модуль PSWindowsUpdate). wuauclt /detectnow — проверить обновления. UsoClient StartScan — Windows 10+. Просмотр: Get-HotFix | Sort InstalledOn -Desc",
+      "tags": [
+        "обновления",
+        "update",
+        "windows update"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.271202",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 8,
+      "title": "Информация о железе",
+      "content": "systeminfo — полная информация. wmic cpu get name,cores,maxclockspeed — CPU. wmic memorychip get capacity,speed,manufacturer — RAM. wmic diskdrive get model,size — диски. Get-ComputerInfo — всё через PowerShell",
+      "tags": [
+        "железо",
+        "hardware",
+        "инфо"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.401807",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 9,
+      "title": "Температура компонентов",
+      "content": "Windows не показывает температуру по умолчанию. WMI: Get-CimInstance MSAcpi_ThermalZoneTemperature -Namespace root/wmi (не всегда работает). Надёжнее: HWiNFO64, Open Hardware Monitor, или LibreHardwareMonitor (open source)",
+      "tags": [
+        "температура",
+        "нагрев",
+        "thermal"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.417457",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 10,
+      "title": "BIOS/UEFI информация",
+      "content": "wmic bios get smbiosbiosversion,releasedate — версия BIOS. msinfo32 — полная информация. Обновление BIOS — только с сайта производителя!",
+      "tags": [
+        "bios",
+        "uefi",
+        "firmware"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.439167",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 11,
+      "title": "Оперативная память",
+      "content": "Максимум RAM зависит от: 1. Версия Windows (Home — 128GB, Pro — 2TB) 2. Материнская плата 3. Процессор. Проверить: wmic memphysical get maxcapacity. Частота: wmic memorychip get speed",
+      "tags": [
+        "ram",
+        "память",
+        "оперативная"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.448767",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 12,
+      "title": "SSD vs HDD оптимизация",
+      "content": "SSD: отключить дефрагментацию (включить TRIM). Проверить TRIM: fsutil behavior query disabledeletenotify (0 = включен). HDD: дефрагментация помогает. defrag C: /O — оптимизация по типу диска",
+      "tags": [
+        "ssd",
+        "hdd",
+        "оптимизация",
+        "диск"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.474482",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 13,
+      "title": "Энергопотребление",
+      "content": "powercfg /energy — отчёт об энергопотреблении. powercfg /batteryreport — отчёт о батарее. Планы: powercfg /list. Высокая производительность: powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c",
+      "tags": [
+        "энергия",
+        "батарея",
+        "питание"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.486301",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 14,
+      "title": "Обновления Windows",
+      "content": "Get-WindowsUpdate (модуль PSWindowsUpdate). wuauclt /detectnow — проверить обновления. UsoClient StartScan — Windows 10+. Просмотр: Get-HotFix | Sort InstalledOn -Desc",
+      "tags": [
+        "обновления",
+        "update",
+        "windows update"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.499348",
+      "used_count": 0,
+      "rating": 0
+    }
+  ],
+  "sources": [
+    {
+      "name": "Windows Hardware Docs",
+      "url": "https://learn.microsoft.com/en-us/windows-hardware/",
+      "description": "Документация по железу Windows",
+      "added": "2026-03-19T16:37:36.198245"
+    },
+    {
+      "name": "Intel ARK",
+      "url": "https://ark.intel.com/",
+      "description": "Спецификации процессоров Intel",
+      "added": "2026-03-19T16:37:36.200001"
+    },
+    {
+      "name": "Windows Performance",
+      "url": "https://learn.microsoft.com/en-us/windows-hardware/test/wpt/",
+      "description": "Windows Performance Toolkit",
+      "added": "2026-03-19T16:37:36.202016"
+    },
+    {
+      "name": "Windows Hardware Docs",
+      "url": "https://learn.microsoft.com/en-us/windows-hardware/",
+      "description": "Документация по железу Windows",
+      "added": "2026-03-19T16:43:46.401807"
+    },
+    {
+      "name": "Intel ARK",
+      "url": "https://ark.intel.com/",
+      "description": "Спецификации процессоров Intel",
+      "added": "2026-03-19T16:43:46.401807"
+    },
+    {
+      "name": "Windows Performance",
+      "url": "https://learn.microsoft.com/en-us/windows-hardware/test/wpt/",
+      "description": "Windows Performance Toolkit",
+      "added": "2026-03-19T16:43:46.401807"
+    }
+  ],
+  "solutions": {
+    "мало оперативной памяти": {
+      "solution": "1. Найти что ест: Get-Process | Sort WS -Desc | Select -First 10 2. Отключить ненужные службы 3. Увеличить pagefile: sysdm.cpl → Advanced → Performance → Virtual Memory 4. Добавить RAM физически",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:46.515534"
+    },
+    "система тормозит": {
+      "solution": "1. Проверить диск: CrystalDiskInfo (здоровье SSD/HDD) 2. Проверить CPU/RAM: resmon 3. Отключить визуальные эффекты: sysdm.cpl → Advanced → Performance 4. Проверить автозагрузку: Task Manager → Startup 5. sfc /scannow + DISM /RestoreHealth",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:46.527396"
+    },
+    "синий экран (BSOD)": {
+      "solution": "1. Просмотр: Event Viewer → System → Critical 2. Файлы дампа: C:\\Windows\\Minidump\\ 3. Анализ: WinDbg → !analyze -v 4. Частые причины: драйверы (обновить), RAM (memtest86), перегрев",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:46.543045"
+    }
+  },
+  "updated_at": "2026-03-19T16:43:46.558709"
+}

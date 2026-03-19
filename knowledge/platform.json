@@ -1,0 +1,139 @@
+{
+  "module": "platform",
+  "entries": [
+    {
+      "id": 1,
+      "title": "WSL — Linux внутри Windows",
+      "content": "Windows Subsystem for Linux: wsl --install. Позволяет запускать Linux-команды из Windows. wsl -d Ubuntu — запустить Ubuntu. Файлы Windows доступны в /mnt/c/",
+      "tags": [
+        "wsl",
+        "linux",
+        "windows"
+      ],
+      "source": "Microsoft Docs",
+      "created": "2026-03-19T16:43:47.534654",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 2,
+      "title": "Docker — единая среда",
+      "content": "Docker работает одинаково на всех ОС. docker run -it ubuntu bash — запустить Ubuntu контейнер. Docker Desktop для Windows/macOS, docker-ce для Linux",
+      "tags": [
+        "docker",
+        "контейнер",
+        "кроссплатформенность"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:47.534654",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 3,
+      "title": "Менеджеры пакетов",
+      "content": "Windows: winget (встроенный), choco, scoop. macOS: brew (Homebrew). Linux: apt (Debian/Ubuntu), dnf (Fedora), pacman (Arch), nix (универсальный). Nix — единственный кроссплатформенный",
+      "tags": [
+        "пакеты",
+        "установка",
+        "менеджер"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:47.550324",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 4,
+      "title": "Пути файлов",
+      "content": "Windows: C:\\Users\\user (обратный слэш). Linux/macOS: /home/user (прямой слэш). Python pathlib — работает на всех. В Python используй os.path.join() или Path()",
+      "tags": [
+        "пути",
+        "path",
+        "слэш"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:47.565999",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 5,
+      "title": "Переменные окружения",
+      "content": "Windows: set VAR=value / $env:VAR='value'. Linux/macOS: export VAR=value. Просмотр: Windows: set / Linux: env. Python: os.environ",
+      "tags": [
+        "env",
+        "переменные",
+        "окружение"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:47.565999",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 6,
+      "title": "Права доступа",
+      "content": "Windows: ACL (icacls). Linux/macOS: chmod/chown (rwx). Пример: chmod 755 file = rwxr-xr-x. В Windows нет прямого аналога chmod",
+      "tags": [
+        "права",
+        "permissions",
+        "chmod"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:47.581689",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 7,
+      "title": "Совместимость скриптов",
+      "content": "Python — работает везде. Bash — Linux/macOS нативно, Windows через Git Bash/WSL. PowerShell — Windows нативно, Linux/macOS через pwsh. Node.js — везде",
+      "tags": [
+        "скрипты",
+        "совместимость",
+        "bash",
+        "python"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:47.597375",
+      "used_count": 0,
+      "rating": 0
+    }
+  ],
+  "sources": [
+    {
+      "name": "POSIX Standard",
+      "url": "https://pubs.opengroup.org/onlinepubs/9699919799/",
+      "description": "Стандарт POSIX — общий API для Unix-систем",
+      "added": "2026-03-19T16:43:47.519007"
+    },
+    {
+      "name": "WSL Docs",
+      "url": "https://learn.microsoft.com/en-us/windows/wsl/",
+      "description": "Windows Subsystem for Linux",
+      "added": "2026-03-19T16:43:47.519007"
+    },
+    {
+      "name": "Homebrew",
+      "url": "https://docs.brew.sh/",
+      "description": "Пакетный менеджер macOS",
+      "added": "2026-03-19T16:43:47.519007"
+    }
+  ],
+  "solutions": {
+    "скрипт не работает на другой ОС": {
+      "solution": "1. Проверить пути (слэши) 2. Проверить переводы строк (LF vs CRLF) 3. Проверить зависимости (пакеты) 4. Использовать кроссплатформенные инструменты (Python, Node) 5. Docker для полной изоляции",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:47.597375"
+    },
+    "нужно запустить Linux-команду на Windows": {
+      "solution": "1. WSL: wsl ls -la 2. Git Bash: поставляется с Git for Windows 3. Cygwin: полная Unix-среда 4. Docker: docker run -it ubuntu 5. MSYS2: минимальная Unix-среда",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:47.613034"
+    }
+  },
+  "updated_at": "2026-03-19T16:43:47.628716"
+}

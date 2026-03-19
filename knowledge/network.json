@@ -1,0 +1,290 @@
+{
+  "module": "network",
+  "entries": [
+    {
+      "id": 1,
+      "title": "Диагностика сети",
+      "content": "Порядок: 1. ping 127.0.0.1 (loopback) 2. ping шлюз (ipconfig → Default Gateway) 3. ping 8.8.8.8 (внешний IP) 4. ping google.com (DNS). Где упало — там проблема",
+      "tags": [
+        "диагностика",
+        "ping",
+        "проблемы сети"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.358666",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 2,
+      "title": "DNS",
+      "content": "Кэш DNS: ipconfig /displaydns. Очистка: ipconfig /flushdns. Смена DNS: netsh interface ip set dns 'Wi-Fi' static 8.8.8.8. Рекомендуемые: Cloudflare 1.1.1.1, Google 8.8.8.8, Quad9 9.9.9.9",
+      "tags": [
+        "dns",
+        "домен",
+        "разрешение имён"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.374496",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 3,
+      "title": "Wi-Fi диагностика",
+      "content": "netsh wlan show interfaces — текущее подключение и сигнал. netsh wlan show profiles — сохранённые сети. netsh wlan show profile name=SSID key=clear — показать пароль. WiFi отчёт: netsh wlan show wlanreport",
+      "tags": [
+        "wifi",
+        "wi-fi",
+        "беспроводная"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.374496",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 4,
+      "title": "Порты и файрвол",
+      "content": "Открытые порты: netstat -ano | findstr LISTENING. Файрвол: netsh advfirewall show allprofiles. Открыть порт: netsh advfirewall firewall add rule name='My Port' protocol=TCP dir=in localport=8080 action=allow",
+      "tags": [
+        "порт",
+        "файрвол",
+        "firewall"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.390530",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 5,
+      "title": "VPN",
+      "content": "Встроенный VPN Windows: Settings → Network → VPN. PowerShell: Add-VpnConnection. Проверка: ipconfig /all — виртуальный адаптер. Утечка DNS: nslookup google.com — должен отвечать VPN DNS",
+      "tags": [
+        "vpn",
+        "туннель"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.406350",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 6,
+      "title": "Скорость сети",
+      "content": "PowerShell тест скорости: Measure-Command {Invoke-WebRequest https://speed.cloudflare.com/__down?bytes=10000000 -OutFile nul}. Или: curl -o /dev/null -w '%{speed_download}' URL",
+      "tags": [
+        "скорость",
+        "bandwidth",
+        "speed test"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.422324",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 7,
+      "title": "Сброс сети",
+      "content": "Полный сброс: 1. netsh winsock reset 2. netsh int ip reset 3. ipconfig /flushdns 4. ipconfig /release && ipconfig /renew 5. Перезагрузка. Помогает при странных сетевых проблемах",
+      "tags": [
+        "сброс",
+        "reset",
+        "не работает сеть"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.438009",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 8,
+      "title": "Proxy настройки",
+      "content": "Проверить: netsh winhttp show proxy. Установить: netsh winhttp set proxy proxy-server:port. Убрать: netsh winhttp reset proxy. Системный прокси: Settings → Network → Proxy",
+      "tags": [
+        "прокси",
+        "proxy"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.438009",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 9,
+      "title": "Диагностика сети",
+      "content": "Порядок: 1. ping 127.0.0.1 (loopback) 2. ping шлюз (ipconfig → Default Gateway) 3. ping 8.8.8.8 (внешний IP) 4. ping google.com (DNS). Где упало — там проблема",
+      "tags": [
+        "диагностика",
+        "ping",
+        "проблемы сети"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.594899",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 10,
+      "title": "DNS",
+      "content": "Кэш DNS: ipconfig /displaydns. Очистка: ipconfig /flushdns. Смена DNS: netsh interface ip set dns 'Wi-Fi' static 8.8.8.8. Рекомендуемые: Cloudflare 1.1.1.1, Google 8.8.8.8, Quad9 9.9.9.9",
+      "tags": [
+        "dns",
+        "домен",
+        "разрешение имён"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.594899",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 11,
+      "title": "Wi-Fi диагностика",
+      "content": "netsh wlan show interfaces — текущее подключение и сигнал. netsh wlan show profiles — сохранённые сети. netsh wlan show profile name=SSID key=clear — показать пароль. WiFi отчёт: netsh wlan show wlanreport",
+      "tags": [
+        "wifi",
+        "wi-fi",
+        "беспроводная"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.596910",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 12,
+      "title": "Порты и файрвол",
+      "content": "Открытые порты: netstat -ano | findstr LISTENING. Файрвол: netsh advfirewall show allprofiles. Открыть порт: netsh advfirewall firewall add rule name='My Port' protocol=TCP dir=in localport=8080 action=allow",
+      "tags": [
+        "порт",
+        "файрвол",
+        "firewall"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.605717",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 13,
+      "title": "VPN",
+      "content": "Встроенный VPN Windows: Settings → Network → VPN. PowerShell: Add-VpnConnection. Проверка: ipconfig /all — виртуальный адаптер. Утечка DNS: nslookup google.com — должен отвечать VPN DNS",
+      "tags": [
+        "vpn",
+        "туннель"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.621354",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 14,
+      "title": "Скорость сети",
+      "content": "PowerShell тест скорости: Measure-Command {Invoke-WebRequest https://speed.cloudflare.com/__down?bytes=10000000 -OutFile nul}. Или: curl -o /dev/null -w '%{speed_download}' URL",
+      "tags": [
+        "скорость",
+        "bandwidth",
+        "speed test"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.621354",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 15,
+      "title": "Сброс сети",
+      "content": "Полный сброс: 1. netsh winsock reset 2. netsh int ip reset 3. ipconfig /flushdns 4. ipconfig /release && ipconfig /renew 5. Перезагрузка. Помогает при странных сетевых проблемах",
+      "tags": [
+        "сброс",
+        "reset",
+        "не работает сеть"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.652793",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 16,
+      "title": "Proxy настройки",
+      "content": "Проверить: netsh winhttp show proxy. Установить: netsh winhttp set proxy proxy-server:port. Убрать: netsh winhttp reset proxy. Системный прокси: Settings → Network → Proxy",
+      "tags": [
+        "прокси",
+        "proxy"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.668612",
+      "used_count": 0,
+      "rating": 0
+    }
+  ],
+  "sources": [
+    {
+      "name": "Windows Networking",
+      "url": "https://learn.microsoft.com/en-us/windows-server/networking/",
+      "description": "Документация по сетям Windows",
+      "added": "2026-03-19T16:37:36.343010"
+    },
+    {
+      "name": "Cloudflare Learning",
+      "url": "https://www.cloudflare.com/learning/",
+      "description": "Обучающие материалы по сетям и DNS",
+      "added": "2026-03-19T16:37:36.345192"
+    },
+    {
+      "name": "HTTP MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP",
+      "description": "Справочник по HTTP",
+      "added": "2026-03-19T16:37:36.345192"
+    },
+    {
+      "name": "Windows Networking",
+      "url": "https://learn.microsoft.com/en-us/windows-server/networking/",
+      "description": "Документация по сетям Windows",
+      "added": "2026-03-19T16:43:46.558709"
+    },
+    {
+      "name": "Cloudflare Learning",
+      "url": "https://www.cloudflare.com/learning/",
+      "description": "Обучающие материалы по сетям и DNS",
+      "added": "2026-03-19T16:43:46.574371"
+    },
+    {
+      "name": "HTTP MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP",
+      "description": "Справочник по HTTP",
+      "added": "2026-03-19T16:43:46.592078"
+    }
+  ],
+  "solutions": {
+    "нет интернета": {
+      "solution": "1. ipconfig /release && ipconfig /renew 2. ipconfig /flushdns 3. netsh winsock reset 4. Проверить DNS: nslookup google.com 8.8.8.8 5. Перезагрузить роутер 6. Драйвер сетевой карты: devmgmt.msc",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:46.681641"
+    },
+    "медленный интернет": {
+      "solution": "1. Проверить нагрузку: resmon → Network 2. Проверить другие устройства (проблема роутера?) 3. Сменить DNS на 1.1.1.1 4. Проверить фоновые загрузки: Delivery Optimization 5. Попробовать проводное подключение",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:46.694706"
+    },
+    "DNS не разрешает имена": {
+      "solution": "1. ipconfig /flushdns 2. Попробовать другой DNS: nslookup google.com 1.1.1.1 3. Если через VPN — проверить DNS leak 4. Проверить файл hosts: C:\\Windows\\System32\\drivers\\etc\\hosts 5. netsh int ip reset",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:46.700477"
+    },
+    "Wi-Fi постоянно отключается": {
+      "solution": "1. Драйвер: обновить или откатить 2. Электропитание: devmgmt.msc → Network Adapter → Properties → Power Management → снять 'Allow to turn off' 3. Wi-Fi Sense: отключить автоподключение к открытым сетям 4. Забыть сеть и подключиться заново",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:46.716158"
+    }
+  },
+  "updated_at": "2026-03-19T16:43:46.731845"
+}

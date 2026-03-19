@@ -1,0 +1,256 @@
+{
+  "module": "processes",
+  "entries": [
+    {
+      "id": 1,
+      "title": "Критические процессы Windows",
+      "content": "Нельзя завершать: csrss.exe (подсистема), lsass.exe (безопасность), smss.exe (менеджер сессий), wininit.exe (инициализация), services.exe (службы). Завершение = синий экран",
+      "tags": [
+        "критические",
+        "системные",
+        "bsod"
+      ],
+      "source": "Microsoft Docs",
+      "created": "2026-03-19T16:37:36.011793",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 2,
+      "title": "Приоритеты процессов",
+      "content": "Realtime(24) > High(13) > AboveNormal(10) > Normal(8) > BelowNormal(6) > Idle(4). Менять: wmic process where name='app.exe' call setpriority 128 (High). Или PowerShell: (Get-Process app).PriorityClass = 'High'",
+      "tags": [
+        "приоритет",
+        "priority"
+      ],
+      "source": "Microsoft Docs",
+      "created": "2026-03-19T16:37:36.027469",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 3,
+      "title": "Автозагрузка",
+      "content": "Места: 1. Task Manager → Startup 2. shell:startup (текущий пользователь) 3. shell:common startup (все) 4. Реестр: HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run 5. Планировщик задач",
+      "tags": [
+        "автозагрузка",
+        "startup"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.043132",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 4,
+      "title": "Утечка памяти",
+      "content": "Признаки: процесс постоянно растёт в памяти. Диагностика: 1. Process Explorer → свойства процесса → Performance 2. RAMMap от Sysinternals 3. Windows Performance Toolkit (WPT)",
+      "tags": [
+        "утечка",
+        "memory leak",
+        "память"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.058827",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 5,
+      "title": "Зависший процесс",
+      "content": "1. taskkill /f /im process.exe 2. taskkill /f /pid 1234 3. PowerShell: Stop-Process -Name process -Force 4. Если не помогает: wmic process where processid=1234 call terminate",
+      "tags": [
+        "зависший",
+        "kill",
+        "завершить"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.074479",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 6,
+      "title": "Службы Windows",
+      "content": "sc query — список служб. sc stop ServiceName — остановить. sc start ServiceName — запустить. sc config ServiceName start=disabled — отключить. Get-Service | Where Status -eq Running",
+      "tags": [
+        "службы",
+        "services",
+        "sc"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.090116",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 7,
+      "title": "Диагностика высокой нагрузки CPU",
+      "content": "1. Найти процесс: Get-Process | Sort CPU -Desc | Select -First 5 2. Process Explorer → столбец CPU 3. Если svchost.exe — определить службу: tasklist /svc /fi 'PID eq 1234' 4. resmon (Resource Monitor)",
+      "tags": [
+        "cpu",
+        "нагрузка",
+        "загрузка процессора"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:36.105757",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 8,
+      "title": "Критические процессы Windows",
+      "content": "Нельзя завершать: csrss.exe (подсистема), lsass.exe (безопасность), smss.exe (менеджер сессий), wininit.exe (инициализация), services.exe (службы). Завершение = синий экран",
+      "tags": [
+        "критические",
+        "системные",
+        "bsod"
+      ],
+      "source": "Microsoft Docs",
+      "created": "2026-03-19T16:43:46.323233",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 9,
+      "title": "Приоритеты процессов",
+      "content": "Realtime(24) > High(13) > AboveNormal(10) > Normal(8) > BelowNormal(6) > Idle(4). Менять: wmic process where name='app.exe' call setpriority 128 (High). Или PowerShell: (Get-Process app).PriorityClass = 'High'",
+      "tags": [
+        "приоритет",
+        "priority"
+      ],
+      "source": "Microsoft Docs",
+      "created": "2026-03-19T16:43:46.331269",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 10,
+      "title": "Автозагрузка",
+      "content": "Места: 1. Task Manager → Startup 2. shell:startup (текущий пользователь) 3. shell:common startup (все) 4. Реестр: HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run 5. Планировщик задач",
+      "tags": [
+        "автозагрузка",
+        "startup"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.331642",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 11,
+      "title": "Утечка памяти",
+      "content": "Признаки: процесс постоянно растёт в памяти. Диагностика: 1. Process Explorer → свойства процесса → Performance 2. RAMMap от Sysinternals 3. Windows Performance Toolkit (WPT)",
+      "tags": [
+        "утечка",
+        "memory leak",
+        "память"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.333698",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 12,
+      "title": "Зависший процесс",
+      "content": "1. taskkill /f /im process.exe 2. taskkill /f /pid 1234 3. PowerShell: Stop-Process -Name process -Force 4. Если не помогает: wmic process where processid=1234 call terminate",
+      "tags": [
+        "зависший",
+        "kill",
+        "завершить"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.338913",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 13,
+      "title": "Службы Windows",
+      "content": "sc query — список служб. sc stop ServiceName — остановить. sc start ServiceName — запустить. sc config ServiceName start=disabled — отключить. Get-Service | Where Status -eq Running",
+      "tags": [
+        "службы",
+        "services",
+        "sc"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.338913",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 14,
+      "title": "Диагностика высокой нагрузки CPU",
+      "content": "1. Найти процесс: Get-Process | Sort CPU -Desc | Select -First 5 2. Process Explorer → столбец CPU 3. Если svchost.exe — определить службу: tasklist /svc /fi 'PID eq 1234' 4. resmon (Resource Monitor)",
+      "tags": [
+        "cpu",
+        "нагрузка",
+        "загрузка процессора"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.338913",
+      "used_count": 0,
+      "rating": 0
+    }
+  ],
+  "sources": [
+    {
+      "name": "Windows Process Docs",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/procthread/processes-and-threads",
+      "description": "Процессы и потоки Windows",
+      "added": "2026-03-19T16:37:35.996142"
+    },
+    {
+      "name": "Sysinternals",
+      "url": "https://learn.microsoft.com/en-us/sysinternals/",
+      "description": "Утилиты Sysinternals для диагностики",
+      "added": "2026-03-19T16:37:35.996142"
+    },
+    {
+      "name": "PowerShell Process",
+      "url": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-process",
+      "description": "Управление процессами через PowerShell",
+      "added": "2026-03-19T16:37:35.996142"
+    },
+    {
+      "name": "Windows Process Docs",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/procthread/processes-and-threads",
+      "description": "Процессы и потоки Windows",
+      "added": "2026-03-19T16:43:46.307592"
+    },
+    {
+      "name": "Sysinternals",
+      "url": "https://learn.microsoft.com/en-us/sysinternals/",
+      "description": "Утилиты Sysinternals для диагностики",
+      "added": "2026-03-19T16:43:46.307592"
+    },
+    {
+      "name": "PowerShell Process",
+      "url": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-process",
+      "description": "Управление процессами через PowerShell",
+      "added": "2026-03-19T16:43:46.307592"
+    }
+  ],
+  "solutions": {
+    "процесс не завершается": {
+      "solution": "1. taskkill /f /pid PID 2. Если 'Access Denied' — запустить от админа 3. Если защищённый процесс — pskill от Sysinternals 4. Крайний случай — перезагрузка",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:46.338913"
+    },
+    "высокая загрузка CPU": {
+      "solution": "1. Определить процесс: Get-Process | Sort CPU -Desc 2. Если системный (WMI, Defender) — перезапустить службу 3. Если пользовательский — снизить приоритет или перезапустить 4. Проверить не майнер ли (неизвестный процесс с высоким CPU)",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:46.338913"
+    },
+    "программа не запускается": {
+      "solution": "1. Проверить Event Viewer → Application 2. Попробовать от админа 3. Проверить зависимости: depends.exe 4. Проверить совместимость: свойства → Совместимость 5. sfc /scannow если системная",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:46.370255"
+    }
+  },
+  "updated_at": "2026-03-19T16:43:46.385943"
+}

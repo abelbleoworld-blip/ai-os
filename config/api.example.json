@@ -1,0 +1,13 @@
+{
+  "provider": "anthropic",
+  "anthropic_api_key": "YOUR_ANTHROPIC_API_KEY",
+  "openrouter_api_key": "YOUR_OPENROUTER_API_KEY",
+  "default_model": "claude-haiku-4-5-20251001",
+  "smart_model": "claude-sonnet-4-5-20250514",
+  "openrouter_models": {
+    "fast": "anthropic/claude-haiku-4-5-20251001",
+    "smart": "anthropic/claude-sonnet-4-5-20250514",
+    "free": "meta-llama/llama-3.1-8b-instruct:free"
+  },
+  "max_tokens": 1024
+}

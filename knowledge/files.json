@@ -1,0 +1,298 @@
+{
+  "module": "files",
+  "entries": [
+    {
+      "id": 1,
+      "title": "Максимальная длина пути Windows",
+      "content": "По умолчанию 260 символов (MAX_PATH). Можно снять ограничение через реестр: HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem LongPathsEnabled=1",
+      "tags": [
+        "path",
+        "ограничение",
+        "windows"
+      ],
+      "source": "Microsoft Docs",
+      "created": "2026-03-19T16:37:35.854801",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 2,
+      "title": "Типы файловых систем",
+      "content": "NTFS — основная для Windows (журналирование, права доступа, сжатие). FAT32 — совместимость (макс файл 4GB). exFAT — для флешек и SD (нет ограничения 4GB)",
+      "tags": [
+        "ntfs",
+        "fat32",
+        "exfat",
+        "файловая система"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:35.870437",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 3,
+      "title": "Временные файлы Windows",
+      "content": "Расположение: %TEMP% (обычно C:\\Users\\<user>\\AppData\\Local\\Temp). Безопасно удалять файлы старше текущей сессии. Команда: del /q/f %TEMP%\\*",
+      "tags": [
+        "temp",
+        "очистка",
+        "временные"
+      ],
+      "source": "Microsoft Docs",
+      "created": "2026-03-19T16:37:35.886110",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 4,
+      "title": "Права доступа NTFS",
+      "content": "icacls — команда для управления правами. Пример: icacls file.txt /grant User:F (полный доступ). takeown /f file.txt — забрать владение",
+      "tags": [
+        "права",
+        "доступ",
+        "icacls",
+        "ntfs"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:35.886110",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 5,
+      "title": "Поиск больших файлов",
+      "content": "PowerShell: Get-ChildItem -Path C:\\ -Recurse -File | Sort-Object Length -Descending | Select-Object -First 20 FullName, @{N='SizeMB';E={[math]::Round($_.Length/1MB,1)}}",
+      "tags": [
+        "поиск",
+        "большие файлы",
+        "место на диске"
+      ],
+      "source": "PowerShell",
+      "created": "2026-03-19T16:37:35.894333",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 6,
+      "title": "Символические ссылки",
+      "content": "mklink /D link target — создать симлинк на папку. mklink link target — на файл. mklink /J link target — junction (только папки, не нужны права админа)",
+      "tags": [
+        "symlink",
+        "ссылка",
+        "mklink"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:35.901758",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 7,
+      "title": "Восстановление удалённых файлов",
+      "content": "Корзина: первое место поиска. Теневые копии: vssadmin list shadows. Windows File Recovery (winfr) — утилита от Microsoft для глубокого восстановления",
+      "tags": [
+        "восстановление",
+        "удалённые",
+        "корзина"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:35.917438",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 8,
+      "title": "Сжатие файлов",
+      "content": "NTFS сжатие: compact /c /s:folder — сжать папку. Экономит место, но замедляет доступ. Не рекомендуется для SSD и баз данных",
+      "tags": [
+        "сжатие",
+        "compact",
+        "ntfs"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:37:35.933075",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 9,
+      "title": "Максимальная длина пути Windows",
+      "content": "По умолчанию 260 символов (MAX_PATH). Можно снять ограничение через реестр: HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem LongPathsEnabled=1",
+      "tags": [
+        "path",
+        "ограничение",
+        "windows"
+      ],
+      "source": "Microsoft Docs",
+      "created": "2026-03-19T16:43:46.149916",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 10,
+      "title": "Типы файловых систем",
+      "content": "NTFS — основная для Windows (журналирование, права доступа, сжатие). FAT32 — совместимость (макс файл 4GB). exFAT — для флешек и SD (нет ограничения 4GB)",
+      "tags": [
+        "ntfs",
+        "fat32",
+        "exfat",
+        "файловая система"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.149916",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 11,
+      "title": "Временные файлы Windows",
+      "content": "Расположение: %TEMP% (обычно C:\\Users\\<user>\\AppData\\Local\\Temp). Безопасно удалять файлы старше текущей сессии. Команда: del /q/f %TEMP%\\*",
+      "tags": [
+        "temp",
+        "очистка",
+        "временные"
+      ],
+      "source": "Microsoft Docs",
+      "created": "2026-03-19T16:43:46.149916",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 12,
+      "title": "Права доступа NTFS",
+      "content": "icacls — команда для управления правами. Пример: icacls file.txt /grant User:F (полный доступ). takeown /f file.txt — забрать владение",
+      "tags": [
+        "права",
+        "доступ",
+        "icacls",
+        "ntfs"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.169557",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 13,
+      "title": "Поиск больших файлов",
+      "content": "PowerShell: Get-ChildItem -Path C:\\ -Recurse -File | Sort-Object Length -Descending | Select-Object -First 20 FullName, @{N='SizeMB';E={[math]::Round($_.Length/1MB,1)}}",
+      "tags": [
+        "поиск",
+        "большие файлы",
+        "место на диске"
+      ],
+      "source": "PowerShell",
+      "created": "2026-03-19T16:43:46.181230",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 14,
+      "title": "Символические ссылки",
+      "content": "mklink /D link target — создать симлинк на папку. mklink link target — на файл. mklink /J link target — junction (только папки, не нужны права админа)",
+      "tags": [
+        "symlink",
+        "ссылка",
+        "mklink"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.181230",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 15,
+      "title": "Восстановление удалённых файлов",
+      "content": "Корзина: первое место поиска. Теневые копии: vssadmin list shadows. Windows File Recovery (winfr) — утилита от Microsoft для глубокого восстановления",
+      "tags": [
+        "восстановление",
+        "удалённые",
+        "корзина"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.212743",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 16,
+      "title": "Сжатие файлов",
+      "content": "NTFS сжатие: compact /c /s:folder — сжать папку. Экономит место, но замедляет доступ. Не рекомендуется для SSD и баз данных",
+      "tags": [
+        "сжатие",
+        "compact",
+        "ntfs"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:46.212743",
+      "used_count": 0,
+      "rating": 0
+    }
+  ],
+  "sources": [
+    {
+      "name": "Microsoft NTFS Docs",
+      "url": "https://learn.microsoft.com/en-us/windows-server/storage/file-server/ntfs-overview",
+      "description": "Документация по файловой системе NTFS",
+      "added": "2026-03-19T16:37:35.842975"
+    },
+    {
+      "name": "Python pathlib",
+      "url": "https://docs.python.org/3/library/pathlib.html",
+      "description": "Работа с путями в Python",
+      "added": "2026-03-19T16:37:35.846586"
+    },
+    {
+      "name": "Windows File System",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/fileio/file-systems",
+      "description": "Общая документация по ФС Windows",
+      "added": "2026-03-19T16:37:35.846586"
+    },
+    {
+      "name": "Microsoft NTFS Docs",
+      "url": "https://learn.microsoft.com/en-us/windows-server/storage/file-server/ntfs-overview",
+      "description": "Документация по файловой системе NTFS",
+      "added": "2026-03-19T16:43:46.136259"
+    },
+    {
+      "name": "Python pathlib",
+      "url": "https://docs.python.org/3/library/pathlib.html",
+      "description": "Работа с путями в Python",
+      "added": "2026-03-19T16:43:46.138268"
+    },
+    {
+      "name": "Windows File System",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/fileio/file-systems",
+      "description": "Общая документация по ФС Windows",
+      "added": "2026-03-19T16:43:46.149916"
+    }
+  ],
+  "solutions": {
+    "диск заполнен": {
+      "solution": "1. Очистка диска: cleanmgr /d C 2. Удалить WinSxS: Dism /Online /Cleanup-Image /StartComponentCleanup 3. Найти большие файлы: Get-ChildItem -Recurse | Sort Length -Desc | Select -First 20",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:46.228407"
+    },
+    "файл занят другим процессом": {
+      "solution": "1. Resource Monitor → CPU → Associated Handles → поиск файла 2. PowerShell: Get-Process | Where-Object {$_.Modules.FileName -eq 'path'} 3. handle.exe от Sysinternals",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:46.244311"
+    },
+    "нет доступа к файлу": {
+      "solution": "1. takeown /f file /r /d y 2. icacls file /grant %username%:F 3. Проверить не зашифрован ли (cipher /c file)",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:46.260426"
+    },
+    "имя файла слишком длинное": {
+      "solution": "1. Включить длинные пути: reg add HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 2. Использовать subst для сокращения пути: subst X: C:\\very\\long\\path",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:46.282153"
+    }
+  },
+  "updated_at": "2026-03-19T16:43:46.295979"
+}

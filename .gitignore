@@ -1,0 +1,8 @@
+config/api.json
+__pycache__/
+*.pyc
+logs/
+versions/
+memory/trainer_stats.json
+memory/health_log.json
+exports/

@@ -1,0 +1,158 @@
+{
+  "module": "designer",
+  "entries": [
+    {
+      "id": 1,
+      "title": "Правило 60-30-10",
+      "content": "Основной цвет — 60% (фон), вторичный — 30% (карточки, панели), акцент — 10% (кнопки, ссылки). Создаёт визуальную гармонию",
+      "tags": [
+        "цвет",
+        "палитра",
+        "баланс"
+      ],
+      "source": "Дизайн",
+      "created": "2026-03-19T16:43:47.006463",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 2,
+      "title": "Контраст текста",
+      "content": "WCAG AA: контраст минимум 4.5:1 для текста, 3:1 для крупного. Белый текст на тёмном фоне (#0a0e17) — контраст ~18:1, отлично. Серый #94a3b8 на тёмном — ~7:1, достаточно",
+      "tags": [
+        "контраст",
+        "доступность",
+        "wcag"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:47.014905",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 3,
+      "title": "Типографика",
+      "content": "Системные шрифты: font-family: 'Segoe UI', system-ui, sans-serif. Размеры: 13px мелкий, 14px обычный, 16px основной, 18-22px заголовки. Line-height: 1.5 для текста, 1.2 для заголовков",
+      "tags": [
+        "шрифт",
+        "типографика",
+        "font"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:47.030567",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 4,
+      "title": "Отступы и сетка",
+      "content": "Base unit: 4px или 8px. Отступы: 8, 12, 16, 20, 24, 32px. Grid gap: 16px. Padding карточки: 20px. Border-radius: 8px кнопки, 12px карточки",
+      "tags": [
+        "сетка",
+        "отступы",
+        "spacing"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:47.077884",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 5,
+      "title": "Тёмная тема",
+      "content": "Не используй чистый чёрный (#000). Лучше: #0a0e17, #111827, #1e293b — слои темноты. Текст: не чисто белый, а #e0e6f0. Тени: более заметные чем в светлой теме",
+      "tags": [
+        "dark",
+        "тёмная тема",
+        "dark mode"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:47.141162",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 6,
+      "title": "Анимации",
+      "content": "Длительность: 150ms для hover, 200-300ms для переходов, 500ms для появления. Easing: ease-out для появления, ease-in для исчезновения. Не анимируй layout (width/height) — используй transform",
+      "tags": [
+        "анимация",
+        "transition",
+        "motion"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:47.156852",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 7,
+      "title": "Адаптивность",
+      "content": "Breakpoints: 640px (mobile), 768px (tablet), 1024px (desktop), 1280px (wide). Mobile-first: начинай с мобильного, расширяй через min-width. Минимальный tap target: 44x44px",
+      "tags": [
+        "адаптивный",
+        "responsive",
+        "mobile"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:47.204197",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 8,
+      "title": "SVG иконки",
+      "content": "Размер: 16px inline, 20-24px кнопки, 32-48px навигация. stroke-width: 1.5-2px. Используй currentColor для наследования цвета. viewBox всегда задавать",
+      "tags": [
+        "иконки",
+        "svg",
+        "icons"
+      ],
+      "source": "",
+      "created": "2026-03-19T16:43:47.277256",
+      "used_count": 0,
+      "rating": 0
+    }
+  ],
+  "sources": [
+    {
+      "name": "Material Design",
+      "url": "https://m3.material.io/",
+      "description": "Гайдлайны Material Design от Google",
+      "added": "2026-03-19T16:43:46.967765"
+    },
+    {
+      "name": "Apple HIG",
+      "url": "https://developer.apple.com/design/human-interface-guidelines/",
+      "description": "Human Interface Guidelines от Apple",
+      "added": "2026-03-19T16:43:46.967765"
+    },
+    {
+      "name": "Tailwind CSS",
+      "url": "https://tailwindcss.com/docs",
+      "description": "Документация Tailwind CSS",
+      "added": "2026-03-19T16:43:46.967765"
+    },
+    {
+      "name": "CSS MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/CSS",
+      "description": "Справочник CSS",
+      "added": "2026-03-19T16:43:46.983438"
+    }
+  ],
+  "solutions": {
+    "текст плохо читается": {
+      "solution": "1. Увеличить контраст (минимум 4.5:1) 2. Увеличить font-size (минимум 14px) 3. Увеличить line-height (1.5) 4. Добавить letter-spacing: 0.02em для мелкого текста",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:47.345889"
+    },
+    "интерфейс выглядит перегруженным": {
+      "solution": "1. Увеличить отступы (padding/margin) 2. Уменьшить количество цветов 3. Добавить пустое пространство 4. Группировать связанные элементы 5. Убрать ненужные границы",
+      "success": true,
+      "times_used": 0,
+      "saved_at": "2026-03-19T16:43:47.409000"
+    }
+  },
+  "updated_at": "2026-03-19T16:43:47.455956"
+}
