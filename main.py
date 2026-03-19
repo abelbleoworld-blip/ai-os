@@ -36,6 +36,7 @@ from modules.watchdog import WatchdogModule
 from modules.designer import DesignerModule
 from modules.platform import PlatformModule
 from modules.versions import VersionsModule
+from modules.scanner import ScannerModule
 from ai.brain import Brain
 from ai.claude_brain import ClaudeBrain
 from ai.trainer import AutoTrainer
@@ -72,6 +73,7 @@ async def main():
         DesignerModule(),
         PlatformModule(),
         VersionsModule(),
+        ScannerModule(),
     ]
     print(f"[2/7] Создано {len(modules)} модулей")
 

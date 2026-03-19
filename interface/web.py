@@ -1,6 +1,6 @@
 """
 Веб-интерфейс AI-OS.
-Дашборд в браузере — кнопки, панели, статусы.
+Glassmorphism dark design.
 Запускается на localhost:8080
 """
 
@@ -23,110 +23,79 @@ from modules.watchdog import WatchdogModule
 from modules.designer import DesignerModule
 from modules.platform import PlatformModule
 from modules.versions import VersionsModule
+from modules.scanner import ScannerModule
 from ai.brain import Brain
 from ai.claude_brain import ClaudeBrain
 from ai.trainer import AutoTrainer
 
-
-# Инициализация системы
 bus = SystemBus()
-modules = [FilesModule(), ProcessesModule(), SystemInfoModule(), NetworkModule(), DesignerModule(), PlatformModule(), VersionsModule()]
+modules = [FilesModule(), ProcessesModule(), SystemInfoModule(), NetworkModule(), DesignerModule(), PlatformModule(), VersionsModule(), ScannerModule()]
 for m in modules:
     bus.register(m)
-
 watchdog = WatchdogModule(bus=bus)
 bus.register(watchdog)
-
 base_brain = Brain(bus)
 trainer = AutoTrainer(base_brain)
 base_brain.trainer = trainer
-
 try:
     brain = ClaudeBrain(bus, base_brain)
 except:
     brain = base_brain
 
-
 @asynccontextmanager
 async def lifespan(app):
-    # Startup
     await bus.start_all()
     await watchdog.start()
     await watchdog.cmd_check()
     yield
-    # Shutdown
     trainer.save()
     brain.save_memory()
 
-
 app = FastAPI(title="AI-OS", lifespan=lifespan)
-
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard():
     return DASHBOARD_HTML
 
-
 @app.get("/api/status")
 async def api_status():
-    return {
-        "modules": bus.list_modules(),
-        "brain": {
-            "skills": len(brain.skills),
-            "patterns": len(brain.patterns),
-            "history_count": len(brain.history),
-        },
-        "trainer": {
-            "commands_observed": sum(trainer.command_counts.values()),
-            "unique_commands": len(trainer.command_counts),
-        }
-    }
-
+    return {"modules": bus.list_modules(), "brain": {"skills": len(brain.skills), "patterns": len(brain.patterns), "history_count": len(brain.history)}, "trainer": {"commands_observed": sum(trainer.command_counts.values()), "unique_commands": len(trainer.command_counts)}}
 
 @app.get("/api/health")
 async def api_health():
     return await watchdog.cmd_check()
 
-
 @app.get("/api/system/overview")
 async def api_overview():
     return await bus.send("system", "overview")
-
 
 @app.get("/api/system/memory")
 async def api_memory():
     return await bus.send("system", "memory")
 
-
 @app.get("/api/system/cpu")
 async def api_cpu():
     return await bus.send("system", "cpu")
-
 
 @app.get("/api/system/uptime")
 async def api_uptime():
     return await bus.send("system", "uptime")
 
-
 @app.get("/api/processes")
 async def api_processes():
     return await bus.send("processes", "list", top=15)
-
 
 @app.get("/api/disks")
 async def api_disks():
     return await bus.send("files", "disk_usage")
 
-
 @app.get("/api/network/connections")
 async def api_connections():
     return await bus.send("network", "connections")
 
-
 @app.get("/api/report")
 async def api_report():
     return trainer.get_report()
-
 
 @app.post("/api/command")
 async def api_command(data: dict):
@@ -137,572 +106,309 @@ async def api_command(data: dict):
     return {"input": cmd, "result": result}
 
 
-DASHBOARD_HTML = """
-<!DOCTYPE html>
+DASHBOARD_HTML = """<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI-OS Dashboard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>AI-OS</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    background: #0a0e17;
-    color: #e0e6f0;
-    min-height: 100vh;
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#0A0A0A;--card:#151515;--card-hover:#1a1a1a;--card-border:rgba(255,255,255,0.06);
+--glass:rgba(255,255,255,0.04);--glass-border:rgba(255,255,255,0.08);
+--text:#F5F5F5;--text2:#9a9a9a;--text3:#555;
+--accent:#6366F1;--accent-g:rgba(99,102,241,0.12);
+--green:#22C55E;--green-g:rgba(34,197,94,0.12);
+--amber:#F59E0B;--amber-g:rgba(245,158,11,0.12);
+--red:#EF4444;--red-g:rgba(239,68,68,0.12);
+--r:16px;--rs:10px;
 }
-.header {
-    background: linear-gradient(135deg, #1a1f35 0%, #0d1225 100%);
-    border-bottom: 1px solid #2a3555;
-    padding: 16px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-.header h1 {
-    font-size: 22px;
-    font-weight: 600;
-    background: linear-gradient(90deg, #60a5fa, #a78bfa);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-.header .status-badge {
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 500;
-}
-.status-ok { background: #065f46; color: #6ee7b7; }
-.status-warn { background: #78350f; color: #fcd34d; }
-.status-err { background: #7f1d1d; color: #fca5a5; }
+html,body{height:100%;font-family:-apple-system,'SF Pro Display','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
 
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-    gap: 16px;
-    padding: 20px;
-    max-width: 1400px;
-    margin: 0 auto;
-}
-.card {
-    background: #111827;
-    border: 1px solid #1e293b;
-    border-radius: 12px;
-    padding: 20px;
-    transition: border-color 0.2s;
-}
-.card:hover { border-color: #3b82f6; }
-.card h2 {
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #94a3b8;
-    margin-bottom: 16px;
-}
-.card h2 .dot {
-    display: inline-block;
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    margin-right: 8px;
-}
-.dot-green { background: #22c55e; box-shadow: 0 0 8px #22c55e55; }
-.dot-yellow { background: #eab308; box-shadow: 0 0 8px #eab30855; }
-.dot-red { background: #ef4444; box-shadow: 0 0 8px #ef444455; }
-.dot-gray { background: #6b7280; }
+/* Animated BG */
+.bg-layer{position:fixed;top:0;left:0;right:0;bottom:0;z-index:0;overflow:hidden}
+.bg-layer::before{content:'';position:absolute;width:140%;height:140%;top:-20%;left:-20%;
+background:radial-gradient(ellipse at 30% 20%,rgba(99,102,241,0.08) 0%,transparent 50%),
+radial-gradient(ellipse at 70% 80%,rgba(239,68,68,0.05) 0%,transparent 50%),
+radial-gradient(ellipse at 50% 50%,rgba(34,197,94,0.04) 0%,transparent 60%);
+animation:bgMove 20s ease-in-out infinite alternate}
+@keyframes bgMove{0%{transform:translate(0,0) rotate(0deg)}100%{transform:translate(-3%,2%) rotate(2deg)}}
 
-.metric {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    padding: 8px 0;
-    border-bottom: 1px solid #1e293b;
-}
-.metric:last-child { border-bottom: none; }
-.metric .label { color: #94a3b8; font-size: 14px; }
-.metric .value { font-size: 18px; font-weight: 600; }
-.value-ok { color: #22c55e; }
-.value-warn { color: #eab308; }
-.value-crit { color: #ef4444; }
+.app{display:flex;flex-direction:column;height:100vh;max-width:800px;margin:0 auto;position:relative;z-index:1}
 
-.bar-bg {
-    width: 100%;
-    height: 8px;
-    background: #1e293b;
-    border-radius: 4px;
-    margin-top: 6px;
-    overflow: hidden;
-}
-.bar-fill {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.5s ease;
-}
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;flex-shrink:0}
+.hdr-left{display:flex;align-items:center;gap:14px}
+.traffic{display:flex;gap:6px}
+.traffic-dot{width:12px;height:12px;border-radius:50%}
+.td-r{background:#EF4444}.td-y{background:#F59E0B}.td-g{background:#22C55E}
+.hdr-time{color:var(--text2);font-size:13px;font-weight:400}
+.hdr-right{color:var(--text2);font-size:13px}
 
-.module-list { list-style: none; }
-.module-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 12px;
-    margin-bottom: 6px;
-    background: #0f172a;
-    border-radius: 8px;
-    border: 1px solid #1e293b;
-}
-.module-item .name { font-weight: 500; }
-.module-item .cmds { color: #64748b; font-size: 13px; }
-.module-badge {
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 500;
-}
-.badge-running { background: #065f46; color: #6ee7b7; }
-.badge-stopped { background: #7f1d1d; color: #fca5a5; }
+/* STATUS BAR */
+.status-bar{margin:0 20px 8px;padding:10px 16px;border-radius:var(--r);display:flex;align-items:center;gap:10px;transition:all 0.3s}
+.sb-ok{background:var(--green-g);color:var(--green)}
+.sb-warn{background:var(--amber-g);color:var(--amber)}
+.sb-crit{background:var(--red-g);color:var(--red);animation:critPulse 2s ease infinite}
+@keyframes critPulse{0%,100%{opacity:1}50%{opacity:0.7}}
+.sb-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
+.sb-text{font-size:13px;font-weight:500}
+.sb-btn{margin-left:auto;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:inherit}
+.sb-btn-fix{background:var(--red);color:white}
+.sb-btn-fix:hover{background:#dc2626}
 
-.btn-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 12px;
-}
-.btn {
-    padding: 8px 16px;
-    border: 1px solid #2a3555;
-    background: #1e293b;
-    color: #e0e6f0;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 13px;
-    transition: all 0.15s;
-}
-.btn:hover { background: #2a3555; border-color: #3b82f6; }
-.btn:active { transform: scale(0.97); }
-.btn-primary { background: #1d4ed8; border-color: #3b82f6; }
-.btn-primary:hover { background: #2563eb; }
-.btn-danger { border-color: #991b1b; }
-.btn-danger:hover { background: #991b1b; }
+/* CHAT */
+.chat{flex:1;overflow-y:auto;padding:12px 20px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+.chat::-webkit-scrollbar{width:3px}.chat::-webkit-scrollbar-thumb{background:var(--card-border);border-radius:3px}
 
-.command-box {
-    grid-column: 1 / -1;
-}
-.cmd-input-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 12px;
-}
-.cmd-input {
-    flex: 1;
-    padding: 12px 16px;
-    background: #0f172a;
-    border: 1px solid #2a3555;
-    border-radius: 8px;
-    color: #e0e6f0;
-    font-size: 15px;
-    font-family: 'Cascadia Code', 'Fira Code', monospace;
-    outline: none;
-}
-.cmd-input:focus { border-color: #3b82f6; }
-.cmd-input::placeholder { color: #475569; }
-.cmd-output {
-    background: #0f172a;
-    border: 1px solid #1e293b;
-    border-radius: 8px;
-    padding: 16px;
-    font-family: 'Cascadia Code', 'Fira Code', monospace;
-    font-size: 13px;
-    max-height: 350px;
-    overflow-y: auto;
-    white-space: pre-wrap;
-    line-height: 1.6;
-    color: #a5b4c8;
-}
-.cmd-output .cmd-line { color: #60a5fa; }
-.cmd-output .cmd-result { color: #e0e6f0; }
-.cmd-output .cmd-error { color: #fca5a5; }
+.msg{max-width:82%;animation:msgIn 0.3s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.msg-user{align-self:flex-end}
+.msg-ai{align-self:flex-start}
 
-.alerts-list { list-style: none; }
-.alert-item {
-    padding: 10px 14px;
-    margin-bottom: 6px;
-    border-radius: 8px;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.alert-warn { background: #422006; border: 1px solid #78350f; color: #fcd34d; }
-.alert-crit { background: #450a0a; border: 1px solid #7f1d1d; color: #fca5a5; }
-.alert-ok { background: #052e16; border: 1px solid #065f46; color: #6ee7b7; }
+.bubble{padding:14px 18px;border-radius:var(--r);font-size:15px;line-height:1.55;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.msg-user .bubble{background:rgba(255,255,255,0.08);border:1px solid var(--glass-border);border-bottom-right-radius:4px;color:var(--text)}
+.msg-ai .bubble{background:rgba(255,255,255,0.04);border:1px solid var(--card-border);border-bottom-left-radius:4px}
+.msg-ai .msg-name{font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase}
 
-.process-table { width: 100%; font-size: 13px; }
-.process-table th {
-    text-align: left;
-    color: #64748b;
-    padding: 6px 8px;
-    border-bottom: 1px solid #1e293b;
-    font-weight: 500;
-}
-.process-table td {
-    padding: 6px 8px;
-    border-bottom: 1px solid #0f172a;
-}
+/* Typing */
+.typing{display:flex;gap:5px;padding:14px 18px}
+.typing-d{width:8px;height:8px;background:var(--text3);border-radius:50%;animation:tBounce 1.4s ease infinite}
+.typing-d:nth-child(2){animation-delay:.2s}.typing-d:nth-child(3){animation-delay:.4s}
+@keyframes tBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-8px)}}
 
-.loader {
-    display: inline-block;
-    width: 16px; height: 16px;
-    border: 2px solid #2a3555;
-    border-top-color: #3b82f6;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-    margin-right: 8px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
+/* MODULE GRID */
+.mod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.mod-tile{background:var(--card);border:1px solid var(--card-border);border-radius:var(--rs);padding:14px 12px;text-align:center;cursor:pointer;transition:all 0.2s}
+.mod-tile:hover{background:var(--card-hover);border-color:rgba(255,255,255,0.12);transform:translateY(-2px)}
+.mod-tile:active{transform:scale(0.97)}
+.mod-icon{font-size:24px;margin-bottom:6px;display:block}
+.mod-name{font-size:12px;color:var(--text2);font-weight:500}
 
-.quick-actions { margin-top: 16px; }
-.footer {
-    text-align: center;
-    padding: 20px;
-    color: #475569;
-    font-size: 13px;
-}
+/* SMART CARDS */
+.scard{background:var(--card);border:1px solid var(--card-border);border-radius:var(--rs);padding:16px;margin-top:10px;backdrop-filter:blur(10px)}
+.scard-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;font-weight:600}
+.scard-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0}
+.scard-row+.scard-row{border-top:1px solid var(--card-border)}
+.sc-l{color:var(--text2);font-size:13px}.sc-v{font-size:15px;font-weight:600}
+.sc-ok{color:var(--green)}.sc-warn{color:var(--amber)}.sc-crit{color:var(--red)}
+
+.bar-t{width:100%;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;margin-top:6px;overflow:hidden}
+.bar-f{height:100%;border-radius:3px;transition:width 0.6s cubic-bezier(.4,0,.2,1)}
+
+/* Alert cards - 3 states */
+.alert{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--rs);font-size:13px;font-weight:500;margin-top:6px}
+.alert-ok{background:var(--green-g);color:var(--green)}
+.alert-warn{background:var(--amber-g);color:var(--amber)}
+.alert-crit{background:var(--red-g);color:var(--red);animation:critPulse 2s ease infinite}
+.alert-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
+.alert-btn{margin-left:auto;padding:6px 16px;border-radius:8px;border:none;background:var(--red);color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.alert-btn:hover{background:#dc2626}
+
+/* Diag card */
+.diag{background:var(--card);border:1px solid var(--card-border);border-radius:var(--rs);padding:16px;margin-top:10px}
+.diag-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.diag-title{font-size:14px;font-weight:600}.diag-icon{font-size:20px}
+.diag-status{font-size:13px;margin-bottom:8px}
+.diag-actions{display:flex;gap:8px;margin-top:10px}
+.diag-btn{padding:8px 16px;border-radius:8px;border:1px solid var(--card-border);background:var(--card);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit;transition:all 0.15s}
+.diag-btn:hover{background:var(--card-hover);border-color:var(--accent)}
+.diag-btn-primary{background:var(--accent);border-color:var(--accent);color:white}
+.diag-btn-primary:hover{background:#5558e6}
+
+/* Process table */
+.ptbl{width:100%;font-size:12px;border-collapse:collapse;margin-top:8px}
+.ptbl th{color:var(--text3);font-weight:500;text-align:left;padding:4px 8px 8px;font-size:11px;text-transform:uppercase;letter-spacing:.3px}
+.ptbl td{padding:5px 8px;color:var(--text2);border-top:1px solid var(--card-border)}
+.ptbl td:first-child{color:var(--text);font-weight:500}
+
+/* Code block */
+.cblock{background:#0d0d0d;border:1px solid var(--card-border);border-radius:8px;padding:12px;margin-top:8px;font-family:'Cascadia Code','Fira Code',monospace;font-size:12px;color:var(--text2);white-space:pre-wrap;max-height:180px;overflow-y:auto;line-height:1.5}
+
+/* INPUT */
+.input-area{padding:10px 20px 20px;flex-shrink:0}
+.input-row{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:28px;padding:6px 6px 6px 20px;backdrop-filter:blur(20px);transition:all 0.2s}
+.input-row:focus-within{border-color:rgba(99,102,241,0.4);box-shadow:0 0 0 3px var(--accent-g)}
+.input-f{flex:1;background:transparent;border:none;color:var(--text);font-size:15px;font-family:inherit;outline:none;padding:8px 0}
+.input-f::placeholder{color:var(--text3)}
+.btn-mic{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#ef4444,#f59e0b);border:none;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;font-size:16px}
+.btn-mic:hover{transform:scale(1.05);box-shadow:0 0 16px rgba(239,68,68,0.3)}
+.btn-send{width:42px;height:42px;border-radius:50%;background:var(--accent);border:none;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;font-size:18px}
+.btn-send:hover{background:#5558e6;transform:scale(1.05)}
+.mic-label{text-align:center;margin-top:6px;font-size:11px;color:var(--text3)}
+
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{padding:7px 14px;background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;color:var(--text2);font-size:12px;cursor:pointer;transition:all 0.15s;font-family:inherit;backdrop-filter:blur(10px)}
+.chip:hover{background:var(--accent-g);border-color:var(--accent);color:var(--accent)}
+
+.hidden{display:none!important}
+@media(max-width:600px){.msg{max-width:92%}.mod-grid{grid-template-columns:repeat(2,1fr)}.hdr{padding:12px 16px}.chat{padding:10px 16px}.input-area{padding:8px 16px 16px}}
 </style>
 </head>
 <body>
-
-<div class="header">
-    <h1>AI-OS</h1>
-    <div id="healthBadge" class="status-badge status-ok">Loading...</div>
+<div class="bg-layer"></div>
+<div class="app">
+<div class="hdr">
+<div class="hdr-left">
+<div class="traffic"><div class="traffic-dot td-r"></div><div class="traffic-dot td-y"></div><div class="traffic-dot td-g"></div></div>
+<div class="hdr-time" id="hTime"></div>
+</div>
+<div class="hdr-right">AI-OS</div>
 </div>
 
-<div class="grid">
+<div id="statusBar" class="status-bar sb-ok"><div class="sb-dot"></div><span class="sb-text" id="sbText">System Online</span></div>
 
-    <!-- Система -->
-    <div class="card" id="sysCard">
-        <h2><span class="dot dot-green"></span> Система</h2>
-        <div id="sysInfo">
-            <div class="metric"><span class="label">Загрузка...</span></div>
-        </div>
-        <div class="btn-row">
-            <button class="btn" onclick="loadOverview()">Обновить</button>
-            <button class="btn" onclick="quickCmd('system.uptime')">Аптайм</button>
-            <button class="btn" onclick="quickCmd('system.cpu')">CPU</button>
-        </div>
-    </div>
+<div class="chat" id="chat"></div>
 
-    <!-- Память -->
-    <div class="card" id="memCard">
-        <h2><span class="dot dot-green" id="memDot"></span> Память</h2>
-        <div id="memInfo">
-            <div class="metric"><span class="label">Загрузка...</span></div>
-        </div>
-        <div class="btn-row">
-            <button class="btn" onclick="loadMemory()">Обновить</button>
-        </div>
-    </div>
-
-    <!-- Диски -->
-    <div class="card" id="diskCard">
-        <h2><span class="dot dot-green" id="diskDot"></span> Диски</h2>
-        <div id="diskInfo">
-            <div class="metric"><span class="label">Загрузка...</span></div>
-        </div>
-        <div class="btn-row">
-            <button class="btn" onclick="loadDisks()">Обновить</button>
-        </div>
-    </div>
-
-    <!-- Здоровье -->
-    <div class="card" id="healthCard">
-        <h2><span class="dot dot-green" id="healthDot"></span> Здоровье</h2>
-        <div id="healthInfo">
-            <div class="metric"><span class="label">Загрузка...</span></div>
-        </div>
-        <div class="btn-row">
-            <button class="btn btn-primary" onclick="loadHealth()">Проверить</button>
-            <button class="btn" onclick="quickCmd('watchdog.heal')">Лечить</button>
-        </div>
-    </div>
-
-    <!-- Модули -->
-    <div class="card">
-        <h2><span class="dot dot-green"></span> Модули</h2>
-        <ul class="module-list" id="moduleList">
-            <li class="module-item"><span class="label">Загрузка...</span></li>
-        </ul>
-    </div>
-
-    <!-- Процессы -->
-    <div class="card">
-        <h2><span class="dot dot-green"></span> Процессы</h2>
-        <div id="procInfo">
-            <div class="metric"><span class="label">Загрузка...</span></div>
-        </div>
-        <div class="btn-row">
-            <button class="btn" onclick="loadProcesses()">Обновить</button>
-        </div>
-    </div>
-
-    <!-- Обучение -->
-    <div class="card">
-        <h2><span class="dot dot-green"></span> Обучение ИИ</h2>
-        <div id="trainInfo">
-            <div class="metric"><span class="label">Загрузка...</span></div>
-        </div>
-        <div class="btn-row">
-            <button class="btn" onclick="loadReport()">Отчёт</button>
-            <button class="btn" onclick="quickCmd('skills')">Навыки</button>
-            <button class="btn" onclick="quickCmd('save')">Сохранить</button>
-        </div>
-    </div>
-
-    <!-- Быстрые действия -->
-    <div class="card">
-        <h2><span class="dot dot-green"></span> Быстрые действия</h2>
-        <div class="btn-row">
-            <button class="btn btn-primary" onclick="quickCmd('status')">Статус</button>
-            <button class="btn" onclick="quickCmd('system.network')">Сеть</button>
-            <button class="btn" onclick="quickCmd('network.ping host=google.com')">Пинг Google</button>
-            <button class="btn" onclick="quickCmd('files.list path=C:/Users/alex')">Мои файлы</button>
-            <button class="btn" onclick="quickCmd('processes.list top=10')">Топ процессов</button>
-            <button class="btn" onclick="quickCmd('files.disk_usage')">Диски</button>
-            <button class="btn" onclick="quickCmd('watchdog.check')">Проверка</button>
-            <button class="btn btn-danger" onclick="quickCmd('watchdog.heal')">Лечить</button>
-        </div>
-    </div>
-
-    <!-- Командная строка -->
-    <div class="card command-box">
-        <h2><span class="dot dot-green"></span> Командная строка</h2>
-        <div class="cmd-input-row">
-            <input type="text" class="cmd-input" id="cmdInput"
-                   placeholder="модуль.команда аргумент=значение"
-                   onkeydown="if(event.key==='Enter')runCmd()">
-            <button class="btn btn-primary" onclick="runCmd()">Выполнить</button>
-            <button class="btn" onclick="clearOutput()">Очистить</button>
-        </div>
-        <div class="cmd-output" id="cmdOutput">AI-OS готова к работе. Введите команду или нажмите кнопку выше.\n</div>
-    </div>
-
+<div class="input-area">
+<div class="input-row">
+<input type="text" class="input-f" id="inp" placeholder="Напиши что нужно..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();send()}">
+<button class="btn-send" onclick="send()" title="Отправить">&#8593;</button>
 </div>
-
-<div class="footer">AI-OS v0.1 — Модульная ИИ-система</div>
+<div class="mic-label"></div>
+</div>
+</div>
 
 <script>
-const API = '';
+const C=document.getElementById('chat'),I=document.getElementById('inp');
+function uTime(){const n=new Date(),h=String(n.getHours()).padStart(2,'0'),m=String(n.getMinutes()).padStart(2,'0'),d=String(n.getDate()).padStart(2,'0'),mo=String(n.getMonth()+1).padStart(2,'0');document.getElementById('hTime').textContent=h+':'+m+' | '+d+'.'+mo+'.'+n.getFullYear()}
+uTime();setInterval(uTime,30000);
 
-async function api(path, opts) {
-    try {
-        const r = await fetch(API + path, opts);
-        return await r.json();
-    } catch(e) {
-        return {error: e.message};
-    }
-}
+function addMsg(c,t='ai'){
+const m=document.createElement('div');m.className='msg msg-'+t;
+const b=document.createElement('div');b.className='bubble';
+if(t==='ai'){const n=document.createElement('div');n.className='msg-name';n.textContent='AI-OS';m.appendChild(n)}
+if(typeof c==='string')b.innerHTML=c;else b.appendChild(c);
+m.appendChild(b);C.appendChild(m);C.scrollTop=C.scrollHeight;return b}
 
-function $(id) { return document.getElementById(id); }
+function showTyping(){const m=document.createElement('div');m.className='msg msg-ai';m.id='typ';
+m.innerHTML='<div class="msg-name">AI-OS</div><div class="bubble"><div class="typing"><div class="typing-d"></div><div class="typing-d"></div><div class="typing-d"></div></div><div style="color:var(--text3);font-size:13px;margin-top:4px">Ищу решение...</div></div>';
+C.appendChild(m);C.scrollTop=C.scrollHeight}
+function hideTyping(){const t=document.getElementById('typ');if(t)t.remove()}
 
-function appendOutput(text, cls='cmd-result') {
-    const out = $('cmdOutput');
-    const line = document.createElement('div');
-    line.className = cls;
-    line.textContent = text;
-    out.appendChild(line);
-    out.scrollTop = out.scrollHeight;
-}
+function dig(o){if(!o)return o;if(o.result&&typeof o.result==='object'){if(o.result.result!==undefined)return o.result.result;return o.result}return o}
 
-function formatJSON(obj) {
-    return JSON.stringify(obj, null, 2);
-}
+function memCard(d){
+const p=d.UsedPercent||0,cls=p>90?'sc-crit':p>75?'sc-warn':'sc-ok',bc=p>90?'var(--red)':p>75?'var(--amber)':'var(--green)';
+const e=document.createElement('div');e.className='scard';
+e.innerHTML='<div class="scard-title">Память</div><div class="scard-row"><span class="sc-l">Занято</span><span class="sc-v '+cls+'">'+p+'%</span></div><div class="bar-t"><div class="bar-f" style="width:'+p+'%;background:'+bc+'"></div></div><div class="scard-row"><span class="sc-l">Всего</span><span class="sc-v">'+(d.TotalGB||d.TotalMB)+' '+(d.TotalGB?'GB':'MB')+'</span></div><div class="scard-row"><span class="sc-l">Свободно</span><span class="sc-v">'+(d.FreeGB||d.FreeMB)+' '+(d.FreeGB?'GB':'MB')+'</span></div>';
+return e}
 
-async function runCmd() {
-    const input = $('cmdInput');
-    const cmd = input.value.trim();
-    if (!cmd) return;
-    input.value = '';
+function diskCard(items){
+const e=document.createElement('div');e.className='scard';let h='<div class="scard-title">Диски</div>';
+items.forEach(d=>{const p=d.percent||d.used_percent||0,cls=p>90?'sc-crit':p>75?'sc-warn':'sc-ok',bc=p>90?'var(--red)':p>75?'var(--amber)':'var(--green)';
+h+='<div class="scard-row"><span class="sc-l">'+d.drive+'</span><span class="sc-v '+cls+'">'+p+'%</span></div><div class="bar-t"><div class="bar-f" style="width:'+p+'%;background:'+bc+'"></div></div><div class="scard-row"><span class="sc-l">Свободно</span><span class="sc-v">'+d.free_gb+' GB</span></div>'});
+e.innerHTML=h;return e}
 
-    appendOutput('> ' + cmd, 'cmd-line');
+function healthCard(d){
+const e=document.createElement('div');let h='';const alerts=d.alerts||[];
+const sb=document.getElementById('statusBar'),st=document.getElementById('sbText');
+const status=d.status||'OK';
+sb.className='status-bar '+(status==='OK'?'sb-ok':status==='CRITICAL'?'sb-crit':'sb-warn');
+st.textContent=status==='OK'?'System Online':status==='CRITICAL'?'CRITICAL':'Warning';
 
-    const data = await api('/api/command', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({command: cmd})
-    });
+if(alerts.length===0){
+h+='<div class="alert alert-ok"><div class="alert-dot"></div>Всё в порядке</div>'}
+else{alerts.forEach(a=>{
+const c=a.level==='CRITICAL'?'alert-crit':'alert-warn';
+const icon=a.level==='CRITICAL'?'&#9888;':'&#9888;';
+h+='<div class="alert '+c+'"><div class="alert-dot"></div>'+a.message+(a.level==='CRITICAL'?'<button class="alert-btn" onclick="quick(&quot;watchdog.heal&quot;)">Починить</button>':'')+'</div>'})}
+e.innerHTML=h;return e}
 
-    if (data.result) {
-        appendOutput(formatJSON(data.result));
-    } else {
-        appendOutput(formatJSON(data));
-    }
-    appendOutput('');
-}
+function procCard(items){
+const e=document.createElement('div');e.className='scard';
+let h='<div class="scard-title">Процессы</div><table class="ptbl"><tr><th>Имя</th><th>PID</th><th>RAM</th><th>CPU</th></tr>';
+(Array.isArray(items)?items:[]).slice(0,8).forEach(p=>{h+='<tr><td>'+p.Name+'</td><td>'+p.Id+'</td><td>'+p.MemMB+' MB</td><td>'+(p.CPU_s||'-')+'s</td></tr>'});
+h+='</table>';e.innerHTML=h;return e}
 
-async function quickCmd(cmd) {
-    $('cmdInput').value = cmd;
-    await runCmd();
-}
+function modGrid(){
+const mods=[
+{icon:'&#128193;',name:'Файлы',cmd:'files.list'},
+{icon:'&#9881;',name:'Процессы',cmd:'processes.list top=5'},
+{icon:'&#127760;',name:'Сеть',cmd:'network.ping host=google.com'},
+{icon:'&#10084;',name:'Здоровье',cmd:'watchdog.check'},
+{icon:'&#128187;',name:'CPU',cmd:'system.cpu'},
+{icon:'&#128191;',name:'Диски',cmd:'files.disk_usage'},
+{icon:'&#128272;',name:'Версии',cmd:'versions.list'},
+{icon:'&#127912;',name:'Дизайн',cmd:'designer.colors'},
+{icon:'&#129302;',name:'ИИ',cmd:'report'}
+];
+const g=document.createElement('div');g.className='mod-grid';
+mods.forEach(m=>{const d=document.createElement("div");d.className="mod-tile";d.onclick=()=>quick(m.cmd);d.innerHTML='<span class="mod-icon">'+m.icon+'</span><span class="mod-name">'+m.name+'</span>';g.appendChild(d)});
+return g}
 
-function clearOutput() {
-    $('cmdOutput').innerHTML = '';
-}
+function tryCard(mod,cmd,d){
+if(!d)return null;
+if(d.UsedPercent!==undefined&&(d.TotalGB||d.TotalMB))return memCard(d);
+if(Array.isArray(d)&&d[0]&&(d[0].drive||d[0].percent!==undefined))return diskCard(d);
+if(d.checks&&d.alerts!==undefined)return healthCard(d);
+if(Array.isArray(d)&&d[0]&&d[0].Name&&d[0].Id)return procCard(d);
+return null}
 
-async function loadOverview() {
-    const d = await api('/api/system/overview');
-    const r = d.result?.result || d.result || d;
-    if (r && !r.error) {
-        $('sysInfo').innerHTML = `
-            <div class="metric"><span class="label">ОС</span><span class="value">${r.os} ${r.os_version}</span></div>
-            <div class="metric"><span class="label">Процессор</span><span class="value" style="font-size:13px">${r.processor}</span></div>
-            <div class="metric"><span class="label">Имя</span><span class="value">${r.hostname}</span></div>
-            <div class="metric"><span class="label">Архитектура</span><span class="value">${r.machine}</span></div>
-        `;
-    }
-}
+function fmtResult(data){
+if(data.result&&data.result.comment){
+const f=document.createElement('div');f.innerHTML='<div style="margin-bottom:8px">'+data.result.comment+'</div>';
+if(data.result.results){data.result.results.forEach(r=>{
+const inner=dig(r.result);const card=tryCard(r.module,r.command,inner);
+if(card)f.appendChild(card);
+else if(inner){const c=document.createElement('div');c.className='cblock';c.textContent=typeof inner==='string'?inner:JSON.stringify(inner,null,2);f.appendChild(c)}})}
+return f}
+if(data.result&&typeof data.result==='string')return data.result;
+if(data.result){const inner=dig(data.result);const card=tryCard('','',inner);
+if(card){const f=document.createElement('div');f.appendChild(card);return f}
+const f=document.createElement('div');const c=document.createElement('div');c.className='cblock';c.textContent=typeof inner==='string'?inner:JSON.stringify(inner,null,2);f.appendChild(c);return f}
+return JSON.stringify(data,null,2)}
 
-async function loadMemory() {
-    const d = await api('/api/system/memory');
-    const r = d.result?.result || d.result || d;
-    if (r && !r.error) {
-        const pct = r.UsedPercent || 0;
-        const cls = pct > 90 ? 'value-crit' : pct > 75 ? 'value-warn' : 'value-ok';
-        const barCls = pct > 90 ? '#ef4444' : pct > 75 ? '#eab308' : '#22c55e';
-        $('memDot').className = 'dot ' + (pct > 90 ? 'dot-red' : pct > 75 ? 'dot-yellow' : 'dot-green');
-        $('memInfo').innerHTML = `
-            <div class="metric"><span class="label">Использовано</span><span class="value ${cls}">${pct}%</span></div>
-            <div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${barCls}"></div></div>
-            <div class="metric"><span class="label">Всего</span><span class="value">${r.TotalGB || r.TotalMB} ${r.TotalGB ? 'GB' : 'MB'}</span></div>
-            <div class="metric"><span class="label">Свободно</span><span class="value">${r.FreeGB || r.FreeMB} ${r.FreeGB ? 'GB' : 'MB'}</span></div>
-        `;
-    }
-}
+async function send(){
+const t=I.value.trim();if(!t)return;I.value='';addMsg(t,'user');showTyping();
+try{const r=await fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:t})});
+const d=await r.json();hideTyping();addMsg(fmtResult(d),'ai')}
+catch(e){hideTyping();addMsg('<span style="color:var(--red)">Ошибка: '+e.message+'</span>','ai')}}
 
-async function loadDisks() {
-    const d = await api('/api/disks');
-    const items = d.result?.result || d.result || d;
-    if (Array.isArray(items)) {
-        let html = '';
-        let hasWarn = false;
-        items.forEach(disk => {
-            const pct = disk.percent || disk.used_percent || 0;
-            const cls = pct > 90 ? 'value-crit' : pct > 75 ? 'value-warn' : 'value-ok';
-            const barCls = pct > 90 ? '#ef4444' : pct > 75 ? '#eab308' : '#22c55e';
-            if (pct > 85) hasWarn = true;
-            html += `
-                <div class="metric"><span class="label">${disk.drive}</span><span class="value ${cls}">${pct}%</span></div>
-                <div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${barCls}"></div></div>
-                <div class="metric"><span class="label">Свободно</span><span class="value">${disk.free_gb} GB</span></div>
-            `;
-        });
-        $('diskDot').className = 'dot ' + (hasWarn ? 'dot-yellow' : 'dot-green');
-        $('diskInfo').innerHTML = html;
-    }
-}
+function quick(t){I.value=t;send()}
 
-async function loadHealth() {
-    const d = await api('/api/health');
-    const r = d || {};
-    const status = r.status || 'OK';
-    const badge = $('healthBadge');
-    badge.textContent = status === 'OK' ? 'Здоров' : status;
-    badge.className = 'status-badge ' + (status === 'OK' ? 'status-ok' : status === 'CRITICAL' ? 'status-err' : 'status-warn');
-    $('healthDot').className = 'dot ' + (status === 'OK' ? 'dot-green' : status === 'CRITICAL' ? 'dot-red' : 'dot-yellow');
+async function init(){
+try{
+const[health,st]=await Promise.all([fetch('/api/health').then(r=>r.json()),fetch('/api/status').then(r=>r.json())]);
+const sb=document.getElementById('statusBar'),stx=document.getElementById('sbText');
+const s=health.status||'OK';
+sb.className='status-bar '+(s==='OK'?'sb-ok':s==='CRITICAL'?'sb-crit':'sb-warn');
+stx.textContent=s==='OK'?'System Online':s;
+if(s!=='OK'&&health.alerts){
+sb.innerHTML='<div class="sb-dot"></div><span class="sb-text">'+health.alerts[0].message+'</span>'+(s==='CRITICAL'?'<button class="sb-btn sb-btn-fix" onclick="quick(&quot;watchdog.heal&quot;)">Починить</button>':'')}
 
-    const alerts = r.alerts || [];
-    if (alerts.length === 0) {
-        $('healthInfo').innerHTML = '<div class="alert-item alert-ok">Всё в порядке</div>';
-    } else {
-        let html = '';
-        alerts.forEach(a => {
-            const cls = a.level === 'CRITICAL' ? 'alert-crit' : 'alert-warn';
-            html += `<div class="alert-item ${cls}">[${a.level}] ${a.message}</div>`;
-        });
-        $('healthInfo').innerHTML = html;
-    }
-}
+const mc=Object.keys(st.modules).length;
+const rc=Object.values(st.modules).filter(m=>m.status==='running').length;
+const w=document.createElement('div');
+let h='Привет! Я <strong>AI-OS</strong>. '+rc+'/'+mc+' модулей активно.';
 
-async function loadModules() {
-    const d = await api('/api/status');
-    const mods = d.modules || {};
-    let html = '';
-    for (const [name, info] of Object.entries(mods)) {
-        const badgeCls = info.status === 'running' ? 'badge-running' : 'badge-stopped';
-        const cmdCount = Object.keys(info.commands || {}).length;
-        html += `
-            <li class="module-item">
-                <div>
-                    <div class="name">${name}</div>
-                    <div class="cmds">${info.description} (${cmdCount} команд)</div>
-                </div>
-                <span class="module-badge ${badgeCls}">${info.status}</span>
-            </li>
-        `;
-    }
-    $('moduleList').innerHTML = html;
+if(health.alerts&&health.alerts.length>0){
+health.alerts.forEach(a=>{const c=a.level==='CRITICAL'?'alert-crit':'alert-warn';
+h+='<div class="alert '+c+'" style="margin-top:8px"><div class="alert-dot"></div>'+a.message+(a.level==='CRITICAL'?'<button class="alert-btn" onclick="quick(&quot;watchdog.heal&quot;)">Починить</button>':'')+'</div>'})}
+else{h+='<div class="alert alert-ok" style="margin-top:8px"><div class="alert-dot"></div>Система в порядке</div>'}
 
-    // Обучение
-    const tr = d.trainer || {};
-    $('trainInfo').innerHTML = `
-        <div class="metric"><span class="label">Команд отслежено</span><span class="value">${tr.commands_observed || 0}</span></div>
-        <div class="metric"><span class="label">Уникальных</span><span class="value">${tr.unique_commands || 0}</span></div>
-        <div class="metric"><span class="label">Навыков</span><span class="value">${d.brain?.skills || 0}</span></div>
-    `;
-}
+w.innerHTML=h;
+const bubble=addMsg(w,'ai');
+bubble.appendChild(modGrid());
 
-async function loadProcesses() {
-    const d = await api('/api/processes');
-    const items = d.result?.result || d.result || d;
-    if (Array.isArray(items)) {
-        let html = '<table class="process-table"><tr><th>Процесс</th><th>PID</th><th>RAM (MB)</th><th>CPU (s)</th></tr>';
-        items.slice(0, 10).forEach(p => {
-            html += `<tr><td>${p.Name}</td><td>${p.Id}</td><td>${p.MemMB}</td><td>${p.CPU_s || '-'}</td></tr>`;
-        });
-        html += '</table>';
-        $('procInfo').innerHTML = html;
-    }
-}
+const chips=document.createElement('div');chips.className='chips';
+['Здоровье','Память','Процессы','Диски','Сеть'].forEach(n=>{
+const cmds={'Здоровье':'проверь здоровье','Память':'что с памятью?','Процессы':'покажи процессы','Диски':'сколько места на дисках?','Сеть':'проверь сеть'};
+const ch=document.createElement("span");ch.className="chip";ch.textContent=n;ch.onclick=()=>quick(cmds[n]);chips.appendChild(ch)});
+bubble.appendChild(chips);
+}catch(e){addMsg('Запускаюсь...','ai')}
+I.focus()}
 
-async function loadReport() {
-    const d = await api('/api/report');
-    appendOutput('=== Отчёт обучения ===', 'cmd-line');
-    appendOutput(formatJSON(d));
-    appendOutput('');
-}
-
-// Загрузить всё при старте
-async function init() {
-    await Promise.all([
-        loadOverview(),
-        loadMemory(),
-        loadDisks(),
-        loadHealth(),
-        loadModules(),
-        loadProcesses(),
-    ]);
-}
-
-// Автообновление каждые 30 секунд
 init();
-setInterval(() => {
-    loadMemory();
-    loadHealth();
-    loadModules();
-}, 30000);
-
-// Фокус на поле ввода
-$('cmdInput').focus();
+setInterval(async()=>{try{const h=await fetch('/api/health').then(r=>r.json());const s=h.status||'OK';const sb=document.getElementById('statusBar'),st=document.getElementById('sbText');sb.className='status-bar '+(s==='OK'?'sb-ok':s==='CRITICAL'?'sb-crit':'sb-warn');if(s==='OK')sb.innerHTML='<div class="sb-dot"></div><span class="sb-text" id="sbText">System Online</span>'}catch(e){}},60000);
 </script>
 </body>
-</html>
-"""
+</html>"""
 
 
 if __name__ == "__main__":
     import uvicorn
-    print()
-    print("=" * 50)
-    print("  AI-OS Dashboard")
-    print("  Открой в браузере: http://localhost:8080")
-    print("=" * 50)
-    print()
+    print("  AI-OS | http://localhost:8080")
     uvicorn.run(app, host="127.0.0.1", port=8080, log_level="warning")
