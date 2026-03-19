@@ -247,12 +247,29 @@ animation:bgMove 20s ease-in-out infinite alternate}
 .chip{padding:7px 14px;background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;color:var(--text2);font-size:12px;cursor:pointer;transition:all 0.15s;font-family:inherit;backdrop-filter:blur(10px)}
 .chip:hover{background:var(--accent-g);border-color:var(--accent);color:var(--accent)}
 
+/* Notification toast */
+.toast-container{position:fixed;top:20px;right:20px;z-index:1000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{padding:14px 20px;border-radius:var(--rs);font-size:13px;font-weight:500;pointer-events:auto;cursor:pointer;animation:toastIn 0.3s ease;backdrop-filter:blur(20px);max-width:360px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+.toast-ok{background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--green)}
+.toast-warn{background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:var(--amber)}
+.toast-crit{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:var(--red);animation:toastIn 0.3s ease,critPulse 2s ease infinite}
+@keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+.toast .toast-close{margin-left:auto;opacity:0.5;font-size:16px}
+.toast .toast-close:hover{opacity:1}
+
+/* Mic button */
+.btn-mic{width:42px;height:42px;border-radius:50%;background:var(--card);border:1px solid var(--card-border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;font-size:16px}
+.btn-mic:hover{border-color:var(--accent);color:var(--accent)}
+.btn-mic.recording{background:var(--red);border-color:var(--red);color:white;animation:micPulse 1.5s ease infinite}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)}50%{box-shadow:0 0 0 12px rgba(239,68,68,0)}}
+
 .hidden{display:none!important}
 @media(max-width:600px){.msg{max-width:92%}.mod-grid{grid-template-columns:repeat(2,1fr)}.hdr{padding:12px 16px}.chat{padding:10px 16px}.input-area{padding:8px 16px 16px}}
 </style>
 </head>
 <body>
 <div class="bg-layer"></div>
+<div class="toast-container" id="toasts"></div>
 <div class="app">
 <div class="hdr">
 <div class="hdr-left">
@@ -268,7 +285,8 @@ animation:bgMove 20s ease-in-out infinite alternate}
 
 <div class="input-area">
 <div class="input-row">
-<input type="text" class="input-f" id="inp" placeholder="Напиши что нужно..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();send()}">
+<button class="btn-mic" id="micBtn" onclick="toggleMic()" title="Голосовой ввод">&#127908;</button>
+<input type="text" class="input-f" id="inp" placeholder="Напиши или скажи голосом..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();send()}">
 <button class="btn-send" onclick="send()" title="Отправить">&#8593;</button>
 </div>
 <div class="mic-label"></div>
@@ -406,7 +424,73 @@ bubble.appendChild(chips);
 I.focus()}
 
 init();
-setInterval(async()=>{try{const h=await fetch('/api/health').then(r=>r.json());const s=h.status||'OK';const sb=document.getElementById('statusBar'),st=document.getElementById('sbText');sb.className='status-bar '+(s==='OK'?'sb-ok':s==='CRITICAL'?'sb-crit':'sb-warn');if(s==='OK')sb.innerHTML='<div class="sb-dot"></div><span class="sb-text" id="sbText">System Online</span>'}catch(e){}},60000);
+// === NOTIFICATIONS ===
+let lastHealthStatus='OK';
+function showToast(msg,level='ok',duration=6000){
+const tc=document.getElementById('toasts');
+const t=document.createElement('div');
+t.className='toast toast-'+level;
+t.innerHTML='<span>'+msg+'</span><span class="toast-close" onclick="this.parentElement.remove()">&#10005;</span>';
+tc.appendChild(t);
+setTimeout(()=>{if(t.parentElement)t.style.opacity='0';setTimeout(()=>t.remove(),300)},duration);
+// Browser notification
+if(Notification.permission==='granted'&&level!=='ok'){new Notification('AI-OS',{body:msg,icon:'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>'})}
+}
+
+// Request notification permission
+if('Notification' in window&&Notification.permission==='default'){Notification.requestPermission()}
+
+// Health check with notifications
+setInterval(async()=>{try{const h=await fetch('/api/health').then(r=>r.json());const s=h.status||'OK';
+const sb=document.getElementById('statusBar');
+sb.className='status-bar '+(s==='OK'?'sb-ok':s==='CRITICAL'?'sb-crit':'sb-warn');
+if(s==='OK')sb.innerHTML='<div class="sb-dot"></div><span class="sb-text" id="sbText">System Online</span>';
+else if(h.alerts&&h.alerts.length){sb.innerHTML='<div class="sb-dot"></div><span class="sb-text">'+h.alerts[0].message+'</span>'}
+// Notify on status change
+if(s!==lastHealthStatus){
+if(s==='CRITICAL')showToast(h.alerts[0].message,'crit',10000);
+else if(s==='WARNING')showToast(h.alerts[0].message,'warn',8000);
+else if(lastHealthStatus!=='OK')showToast('Система восстановлена','ok',4000);
+lastHealthStatus=s}
+}catch(e){}},30000);
+
+// === VOICE INPUT (Web Speech API) ===
+let recognition=null;
+let isRecording=false;
+
+function toggleMic(){
+if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){
+showToast('Голосовой ввод не поддерживается в этом браузере. Используй Chrome.','warn');return}
+if(isRecording){stopMic();return}
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+recognition=new SR();
+recognition.lang='ru-RU';
+recognition.interimResults=true;
+recognition.continuous=false;
+recognition.maxAlternatives=1;
+const btn=document.getElementById('micBtn');
+btn.classList.add('recording');
+isRecording=true;
+let finalText='';
+recognition.onresult=(e)=>{
+let interim='';
+for(let i=e.resultIndex;i<e.results.length;i++){
+if(e.results[i].isFinal)finalText+=e.results[i][0].transcript;
+else interim+=e.results[i][0].transcript}
+I.value=finalText+interim};
+recognition.onend=()=>{
+btn.classList.remove('recording');isRecording=false;
+if(finalText.trim()){I.value=finalText.trim();send()}};
+recognition.onerror=(e)=>{
+btn.classList.remove('recording');isRecording=false;
+if(e.error!=='no-speech')showToast('Ошибка микрофона: '+e.error,'warn')};
+recognition.start();
+showToast('Слушаю... Говори команду','ok',3000)}
+
+function stopMic(){
+if(recognition){recognition.stop()}
+document.getElementById('micBtn').classList.remove('recording');
+isRecording=false}
 </script>
 </body>
 </html>"""
