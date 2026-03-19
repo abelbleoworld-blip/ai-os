@@ -24,16 +24,20 @@ from modules.designer import DesignerModule
 from modules.platform import PlatformModule
 from modules.versions import VersionsModule
 from modules.scanner import ScannerModule
+from modules.scheduler import SchedulerModule
+from modules.software import SoftwareModule
 from ai.brain import Brain
 from ai.claude_brain import ClaudeBrain
 from ai.trainer import AutoTrainer
 
 bus = SystemBus()
-modules = [FilesModule(), ProcessesModule(), SystemInfoModule(), NetworkModule(), DesignerModule(), PlatformModule(), VersionsModule(), ScannerModule()]
+modules = [FilesModule(), ProcessesModule(), SystemInfoModule(), NetworkModule(), DesignerModule(), PlatformModule(), VersionsModule(), ScannerModule(), SoftwareModule()]
 for m in modules:
     bus.register(m)
 watchdog = WatchdogModule(bus=bus)
 bus.register(watchdog)
+scheduler = SchedulerModule(bus=bus)
+bus.register(scheduler)
 base_brain = Brain(bus)
 trainer = AutoTrainer(base_brain)
 base_brain.trainer = trainer

@@ -37,6 +37,8 @@ from modules.designer import DesignerModule
 from modules.platform import PlatformModule
 from modules.versions import VersionsModule
 from modules.scanner import ScannerModule
+from modules.scheduler import SchedulerModule
+from modules.software import SoftwareModule
 from ai.brain import Brain
 from ai.claude_brain import ClaudeBrain
 from ai.trainer import AutoTrainer
@@ -74,6 +76,7 @@ async def main():
         PlatformModule(),
         VersionsModule(),
         ScannerModule(),
+        SoftwareModule(),
     ]
     print(f"[2/7] Создано {len(modules)} модулей")
 
@@ -81,6 +84,10 @@ async def main():
     for module in modules:
         bus.register(module)
     print("[3/7] Модули зарегистрированы на шине")
+
+    # 3.5 Планировщик (нужен bus)
+    scheduler = SchedulerModule(bus=bus)
+    bus.register(scheduler)
 
     # 4. Запускаем все модули
     await bus.start_all()
