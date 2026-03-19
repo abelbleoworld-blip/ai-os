@@ -8,3 +8,4 @@ memory/health_log.json
 memory/schedule.json
 exports/
 uploads/
+.env

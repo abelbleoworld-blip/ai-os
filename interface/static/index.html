@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-OS</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --border: #1e1e2e;
+            --text: #e0e0e0;
+            --text-dim: #888;
+            --accent: #6c5ce7;
+            --accent-glow: rgba(108, 92, 231, 0.3);
+            --green: #00b894;
+            --red: #e17055;
+            --yellow: #fdcb6e;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--surface);
+        }
+
+        .header h1 {
+            font-size: 16px;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--accent), #a29bfe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--red);
+        }
+
+        .status-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+        .status-text { font-size: 11px; color: var(--text-dim); }
+
+        /* Chat */
+        .chat {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .msg {
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .msg.system {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            align-self: center;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .msg.user {
+            background: var(--accent);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .msg.response {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .msg.error {
+            background: rgba(225, 112, 85, 0.1);
+            border: 1px solid var(--red);
+            color: var(--red);
+            align-self: flex-start;
+        }
+
+        .msg .label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+            opacity: 0.6;
+        }
+
+        /* Input */
+        .input-area {
+            padding: 12px 20px;
+            border-top: 1px solid var(--border);
+            background: var(--surface);
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-area input {
+            flex: 1;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-area input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
+
+        .input-area button {
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            color: white;
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .input-area button:hover { opacity: 0.85; }
+        .input-area button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Scrollbar */
+        .chat::-webkit-scrollbar { width: 6px; }
+        .chat::-webkit-scrollbar-track { background: transparent; }
+        .chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        /* Typing indicator */
+        .typing { display: none; align-self: flex-start; padding: 8px 14px; }
+        .typing.show { display: flex; gap: 4px; align-items: center; }
+        .typing span {
+            width: 6px; height: 6px;
+            background: var(--text-dim);
+            border-radius: 50%;
+            animation: blink 1.4s infinite;
+        }
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink { 0%, 80%, 100% { opacity: 0.3; } 40% { opacity: 1; } }
+
+        @media (max-width: 600px) {
+            .msg { max-width: 95%; }
+            .header h1 { font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="status-dot" id="statusDot"></div>
+        <h1>AI-OS</h1>
+        <span class="status-text" id="statusText">connecting...</span>
+    </div>
+
+    <div class="chat" id="chat">
+        <div class="typing" id="typing"><span></span><span></span><span></span></div>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="input" placeholder="Введи команду или вопрос..." autocomplete="off" disabled>
+        <button id="send" disabled>Send</button>
+    </div>
+
+    <script>
+        const chat = document.getElementById('chat');
+        const input = document.getElementById('input');
+        const sendBtn = document.getElementById('send');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const typing = document.getElementById('typing');
+
+        let ws = null;
+        let reconnectTimer = null;
+
+        function connect() {
+            const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+            ws = new WebSocket(`${proto}://${location.host}/ws`);
+
+            ws.onopen = () => {
+                statusDot.classList.add('connected');
+                statusText.textContent = 'connected';
+                input.disabled = false;
+                sendBtn.disabled = false;
+                input.focus();
+            };
+
+            ws.onmessage = (e) => {
+                typing.classList.remove('show');
+                sendBtn.disabled = false;
+                const msg = JSON.parse(e.data);
+                addMessage(msg.type || 'response', msg.text || JSON.stringify(msg));
+            };
+
+            ws.onclose = () => {
+                statusDot.classList.remove('connected');
+                statusText.textContent = 'disconnected — reconnecting...';
+                input.disabled = true;
+                sendBtn.disabled = true;
+                reconnectTimer = setTimeout(connect, 3000);
+            };
+
+            ws.onerror = () => ws.close();
+        }
+
+        function addMessage(type, text) {
+            const div = document.createElement('div');
+            div.className = `msg ${type}`;
+            div.textContent = text;
+            chat.insertBefore(div, typing);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function send() {
+            const text = input.value.trim();
+            if (!text || !ws || ws.readyState !== 1) return;
+
+            addMessage('user', text);
+            ws.send(JSON.stringify({ input: text }));
+            input.value = '';
+            typing.classList.add('show');
+            sendBtn.disabled = true;
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') send();
+        });
+        sendBtn.addEventListener('click', send);
+
+        connect();
+    </script>
+</body>
+</html>

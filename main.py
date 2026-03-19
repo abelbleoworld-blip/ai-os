@@ -8,9 +8,13 @@ AI-OS — Точка входа.
 4. Запускаем всё
 5. Подключаем мозг (ИИ) + автотренер
 6. Watchdog следит за здоровьем
-7. Открываем консоль для человека
+7. Открываем интерфейс (консоль или веб)
 
 Всё в связке: модули <-> шина <-> мозг <-> тренер <-> watchdog
+
+Запуск:
+  python main.py          — консольный режим
+  python main.py --web    — веб-сервер (для Docker)
 """
 
 import asyncio
@@ -42,7 +46,6 @@ from modules.software import SoftwareModule
 from ai.brain import Brain
 from ai.claude_brain import ClaudeBrain
 from ai.trainer import AutoTrainer
-from interface.console import Console
 
 
 # Настройка логирования
@@ -58,7 +61,40 @@ logging.basicConfig(
 )
 
 
-async def main():
+def _apply_env_config():
+    """Применить API-ключи из переменных окружения (для Docker)"""
+    import json
+    from pathlib import Path
+
+    config_path = Path(__file__).parent / "config" / "api.json"
+    example_path = Path(__file__).parent / "config" / "api.example.json"
+
+    # Если api.json нет — создать из примера
+    if not config_path.exists() and example_path.exists():
+        config = json.loads(example_path.read_text(encoding="utf-8"))
+    elif config_path.exists():
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+    else:
+        config = {}
+
+    # Переменные окружения перезаписывают файл
+    env_anthropic = os.environ.get("ANTHROPIC_API_KEY")
+    env_openrouter = os.environ.get("OPENROUTER_API_KEY")
+    env_model = os.environ.get("AIOS_MODEL")
+
+    if env_anthropic:
+        config["anthropic_api_key"] = env_anthropic
+    if env_openrouter:
+        config["openrouter_api_key"] = env_openrouter
+    if env_model:
+        config["default_model"] = env_model
+
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+async def init_system():
+    """Инициализация всех компонентов AI-OS. Возвращает (brain, trainer)."""
     print("Инициализация AI-OS...")
     print()
 
@@ -125,14 +161,44 @@ async def main():
         for alert in health["alerts"]:
             print(f"    [{alert['level']}] {alert['message']}")
 
-    # Запускаем консоль
+    return brain, trainer
+
+
+async def run_console(brain, trainer):
+    """Консольный режим — как было раньше"""
+    from interface.console import Console
     console = Console(brain)
     await console.run()
-
-    # При выходе — сохранить всё
     trainer.save()
     brain.save_memory()
 
 
+def run_web():
+    """Веб-режим — FastAPI + uvicorn (web.py сам создаёт bus/brain)"""
+    import uvicorn
+    from interface.web import app
+
+    host = os.environ.get("AIOS_HOST", "0.0.0.0")
+    port = int(os.environ.get("AIOS_PORT", "8080"))
+
+    print()
+    print(f"  Web UI: http://localhost:{port}")
+    print(f"  API:    http://localhost:{port}/api/status")
+    print()
+
+    uvicorn.run(app, host=host, port=port, log_level="info")
+
+
+async def main_console():
+    _apply_env_config()
+    brain, trainer = await init_system()
+    await run_console(brain, trainer)
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    _apply_env_config()
+
+    if "--web" in sys.argv:
+        run_web()
+    else:
+        asyncio.run(main_console())

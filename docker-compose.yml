@@ -1,0 +1,17 @@
+services:
+  aios:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - AIOS_MODEL=${AIOS_MODEL:-claude-haiku-4-5-20251001}
+    volumes:
+      - aios-memory:/app/memory
+      - aios-logs:/app/logs
+    restart: unless-stopped
+
+volumes:
+  aios-memory:
+  aios-logs:

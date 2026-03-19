@@ -1,0 +1,10 @@
+.git
+__pycache__
+*.pyc
+logs/
+memory/
+uploads/
+exports/
+versions/
+config/api.json
+.gitignore
