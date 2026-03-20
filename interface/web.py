@@ -964,6 +964,10 @@ function tryCard(d){
   if(!Array.isArray(d)&&Object.values(d)[0]&&Object.values(d)[0].role) return rMesh(d);
   // Ingest stats
   if(d.total_files!==undefined&&d.total_domains!==undefined) return rIngestStats(d);
+  // Palette (has base + colors + mode)
+  if(d.base&&d.colors&&d.mode) return rPalette(d);
+  // Designer colors (has presets or schemes)
+  if(d.presets&&d.schemes) return rDesignerColors(d);
   // Platform detect
   if(d.current_stack&&d.available_commands) return rPlatform(d);
   // Utils ls (has path + items array)
@@ -1022,6 +1026,51 @@ function rIngestStats(d){
     Object.entries(d.domains).forEach(([name,count])=>{
       h+='<div class="kv"><span class="kv-k" style="font-size:12px;text-transform:capitalize">'+name+'</span><span class="kv-v" style="font-size:12px">'+count+' entries</span></div>';
     });
+    h+='</div>';
+  }
+  return h+'</div>';
+}
+
+function rPalette(d){
+  let h='<div class="gc"><div class="gc-title"><span class="gc-icon">\u{1F3A8}</span>Palette \u2014 '+d.mode+'</div>';
+  h+='<div style="display:flex;gap:3px;margin:10px 0;height:48px;border-radius:8px;overflow:hidden">';
+  (d.colors||[]).forEach(c=>{
+    const hex=typeof c==='string'?c:c.hex||c.color||'#888';
+    h+='<div style="flex:1;background:'+hex+';position:relative;cursor:pointer" title="'+(c.role||'')+' '+hex+'" onclick="navigator.clipboard.writeText(\''+hex+'\');toast(\'Copied '+hex+'\',\'ok\',2000)"><div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:8px;color:rgba(0,0,0,0.5);font-weight:600;text-shadow:0 0 3px rgba(255,255,255,0.5)">'+hex.slice(0,7)+'</div></div>';
+  });
+  h+='</div>';
+  h+='<div class="kv"><span class="kv-k">Base</span><span class="kv-v"><span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:'+(d.base||'#888')+';vertical-align:middle;margin-right:6px"></span>'+(d.base||'')+'</span></div>';
+  h+='<div class="kv"><span class="kv-k">Mode</span><span class="kv-v">'+d.mode+'</span></div>';
+  (d.colors||[]).forEach(c=>{
+    const hex=typeof c==='string'?c:c.hex||'#888';
+    const role=typeof c==='object'?c.role||'':'';
+    h+='<div class="kv" style="cursor:pointer" onclick="navigator.clipboard.writeText(\''+hex+'\');toast(\'Copied\',\'ok\',1500)"><span class="kv-k"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:'+hex+';vertical-align:middle;margin-right:8px"></span>'+role+'</span><span class="kv-v" style="font-family:monospace;font-size:13px">'+hex+'</span></div>';
+  });
+  return h+'</div>';
+}
+
+function rDesignerColors(d){
+  let h='<div class="gc"><div class="gc-title"><span class="gc-icon">\u{1F308}</span>Colors & Themes</div>';
+  if(d.presets){
+    h+='<div style="display:flex;gap:3px;margin:10px 0;height:36px;border-radius:8px;overflow:hidden">';
+    Object.entries(d.presets).forEach(([name,hex])=>{
+      h+='<div style="flex:1;background:'+hex+';cursor:pointer" title="'+name+': '+hex+'" onclick="navigator.clipboard.writeText(\''+hex+'\');toast(\''+name+': '+hex+'\',\'ok\',2000)"></div>';
+    });
+    h+='</div>';
+    Object.entries(d.presets).forEach(([name,hex])=>{
+      h+='<div class="kv" style="cursor:pointer" onclick="navigator.clipboard.writeText(\''+hex+'\')"><span class="kv-k"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:'+hex+';vertical-align:middle;margin-right:8px"></span>'+name+'</span><span class="kv-v" style="font-family:monospace;font-size:13px">'+hex+'</span></div>';
+    });
+  }
+  if(d.schemes){
+    h+='<div style="margin-top:10px;font-size:11px;color:var(--t3);text-transform:uppercase;font-weight:600">Schemes</div>';
+    Object.entries(d.schemes).forEach(([name,desc])=>{
+      h+='<div class="kv"><span class="kv-k">'+name+'</span><span class="kv-v" style="font-size:12px;color:var(--t2)">'+desc+'</span></div>';
+    });
+  }
+  if(d.themes){
+    h+='<div style="margin-top:10px;font-size:11px;color:var(--t3);text-transform:uppercase;font-weight:600">Themes</div>';
+    h+='<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">';
+    d.themes.forEach(t=>{h+='<span class="chip" onclick="quick(\'designer.theme style='+t+'\')">'+t+'</span>'});
     h+='</div>';
   }
   return h+'</div>';
