@@ -1,11 +1,11 @@
 """
 Модуль: Процессы
-Управляет запущенными программами. Как диспетчер задач — видит всё что работает,
-может запустить или остановить программу.
+Кроссплатформенный через psutil.
 """
 
 import subprocess
 import asyncio
+import psutil
 from core.module_base import SystemModule
 
 
@@ -18,42 +18,38 @@ class ProcessesModule(SystemModule):
         self.register_command("kill", self.cmd_kill, "Завершить процесс по имени")
 
     async def cmd_list(self, top=20):
-        """Список процессов — что сейчас работает"""
-        result = subprocess.run(
-            ["powershell.exe", "-Command",
-             f"Get-Process | Sort-Object -Property WorkingSet64 -Descending | "
-             f"Select-Object -First {top} Name, Id, "
-             f"@{{N='MemMB';E={{[math]::Round($_.WorkingSet64/1MB,1)}}}}, "
-             f"@{{N='CPU_s';E={{[math]::Round($_.CPU,1)}}}} | "
-             f"ConvertTo-Json"],
-            capture_output=True, text=True, timeout=15
-        )
-        import json
-        try:
-            return json.loads(result.stdout)
-        except:
-            return result.stdout
+        procs = []
+        for p in psutil.process_iter(['pid', 'name', 'memory_info', 'cpu_times']):
+            try:
+                info = p.info
+                mem_mb = round(info['memory_info'].rss / (1024 * 1024), 1) if info['memory_info'] else 0
+                cpu_s = round(sum(info['cpu_times'][:2]), 1) if info['cpu_times'] else 0
+                procs.append({
+                    "Name": info['name'],
+                    "Id": info['pid'],
+                    "MemMB": mem_mb,
+                    "CPU_s": cpu_s,
+                })
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+        procs.sort(key=lambda x: x['MemMB'], reverse=True)
+        return procs[:int(top)]
 
     async def cmd_run(self, program, args=""):
-        """Запустить программу"""
         try:
             proc = subprocess.Popen(
-                f"{program} {args}",
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                f"{program} {args}", shell=True,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
             return f"Запущен: {program} (PID: {proc.pid})"
         except Exception as e:
             return f"Ошибка запуска: {e}"
 
     async def cmd_shell(self, command, timeout=30):
-        """Выполнить команду и вернуть результат"""
         try:
             result = subprocess.run(
                 command, shell=True,
-                capture_output=True, text=True,
-                timeout=timeout
+                capture_output=True, text=True, timeout=timeout
             )
             return {
                 "stdout": result.stdout[:5000],
@@ -64,11 +60,14 @@ class ProcessesModule(SystemModule):
             return {"error": f"Команда не завершилась за {timeout} секунд"}
 
     async def cmd_kill(self, name):
-        """Завершить процесс по имени"""
-        result = subprocess.run(
-            ["powershell.exe", "-Command", f"Stop-Process -Name '{name}' -Force -ErrorAction SilentlyContinue"],
-            capture_output=True, text=True
-        )
-        if result.returncode == 0:
-            return f"Процесс '{name}' завершён"
-        return f"Не удалось завершить '{name}': {result.stderr}"
+        killed = 0
+        for p in psutil.process_iter(['name']):
+            try:
+                if p.info['name'] and name.lower() in p.info['name'].lower():
+                    p.kill()
+                    killed += 1
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+        if killed:
+            return f"Завершено {killed} процессов '{name}'"
+        return f"Процесс '{name}' не найден"

@@ -30,22 +30,22 @@ class PlatformModule(SystemModule):
         # Таблица эквивалентных команд
         self.command_map = {
             "list_processes": {
-                "windows": {"cmd": ["powershell.exe", "-Command", "Get-Process | Select-Object -First 20 Name, Id, @{N='MemMB';E={[math]::Round($_.WorkingSet64/1MB,1)}} | ConvertTo-Json"], "parse": "json"},
+                "windows": {"cmd": ["ps", "aux", "--sort=-%mem"], "parse": "json"},
                 "linux": {"cmd": ["ps", "aux", "--sort=-%mem"], "parse": "text"},
                 "darwin": {"cmd": ["ps", "aux", "-m"], "parse": "text"},
             },
             "memory_info": {
-                "windows": {"cmd": ["powershell.exe", "-Command", "Get-CimInstance Win32_OperatingSystem | Select-Object @{N='TotalGB';E={[math]::Round($_.TotalVisibleMemorySize/1MB,1)}}, @{N='FreeGB';E={[math]::Round($_.FreePhysicalMemory/1MB,1)}} | ConvertTo-Json"], "parse": "json"},
+                "windows": {"cmd": ["free", "-h"], "parse": "json"},
                 "linux": {"cmd": ["free", "-h"], "parse": "text"},
                 "darwin": {"cmd": ["vm_stat"], "parse": "text"},
             },
             "disk_usage": {
-                "windows": {"cmd": ["powershell.exe", "-Command", "Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{N='UsedGB';E={[math]::Round($_.Used/1GB,1)}}, @{N='FreeGB';E={[math]::Round($_.Free/1GB,1)}} | ConvertTo-Json"], "parse": "json"},
+                "windows": {"cmd": ["df", "-h"], "parse": "json"},
                 "linux": {"cmd": ["df", "-h"], "parse": "text"},
                 "darwin": {"cmd": ["df", "-h"], "parse": "text"},
             },
             "network_info": {
-                "windows": {"cmd": ["powershell.exe", "-Command", "Get-NetIPAddress -AddressFamily IPv4 | Select-Object InterfaceAlias, IPAddress | ConvertTo-Json"], "parse": "json"},
+                "windows": {"cmd": ["ip", "addr", "show"], "parse": "json"},
                 "linux": {"cmd": ["ip", "addr", "show"], "parse": "text"},
                 "darwin": {"cmd": ["ifconfig"], "parse": "text"},
             },
@@ -55,7 +55,7 @@ class PlatformModule(SystemModule):
                 "darwin": {"cmd": ["sw_vers"], "parse": "text"},
             },
             "list_services": {
-                "windows": {"cmd": ["powershell.exe", "-Command", "Get-Service | Where-Object Status -eq Running | Select-Object -First 20 Name, DisplayName | ConvertTo-Json"], "parse": "json"},
+                "windows": {"cmd": ["systemctl", "list-units", "--type=service", "--state=running", "--no-pager"], "parse": "json"},
                 "linux": {"cmd": ["systemctl", "list-units", "--type=service", "--state=running", "--no-pager"], "parse": "text"},
                 "darwin": {"cmd": ["launchctl", "list"], "parse": "text"},
             },
@@ -70,7 +70,7 @@ class PlatformModule(SystemModule):
                 "darwin": {"cmd": ["open"], "parse": "text"},
             },
             "find_files": {
-                "windows": {"cmd": ["powershell.exe", "-Command", "Get-ChildItem -Recurse -Name"], "parse": "text"},
+                "windows": {"cmd": ["find", ".", "-name"], "parse": "text"},
                 "linux": {"cmd": ["find", ".", "-name"], "parse": "text"},
                 "darwin": {"cmd": ["find", ".", "-name"], "parse": "text"},
             },

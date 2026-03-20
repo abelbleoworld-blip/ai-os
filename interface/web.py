@@ -1,7 +1,6 @@
 """
-Веб-интерфейс AI-OS.
-Glassmorphism dark design.
-Запускается на localhost:8080
+AI-OS Web Interface.
+Chat-first glassmorphism design. No tabs, no menus. Just conversation.
 """
 
 import asyncio
@@ -12,6 +11,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import HTMLResponse
 from core.bus import SystemBus
@@ -111,8 +111,6 @@ async def api_command(data: dict):
 
 @app.post("/api/upload")
 async def api_upload(file: UploadFile = File(...)):
-    """Загрузка файла — сохраняет в ai-os/uploads/"""
-    import os
     upload_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")
     os.makedirs(upload_dir, exist_ok=True)
     save_path = os.path.join(upload_dir, file.filename)
@@ -120,429 +118,564 @@ async def api_upload(file: UploadFile = File(...)):
     with open(save_path, "wb") as f:
         f.write(content)
     size = len(content)
-    # Анализируем файл через brain
     ext = os.path.splitext(file.filename)[1].lower()
-    analysis = f"Файл '{file.filename}' загружен ({size} байт). Путь: {save_path}"
+    analysis = f"Файл '{file.filename}' загружен ({size} байт)"
     if ext in ('.txt', '.py', '.js', '.json', '.md', '.csv', '.log', '.xml', '.html', '.css'):
         try:
             text = content.decode('utf-8', errors='replace')[:3000]
-            analysis += f"\nСодержимое (первые 3000 символов):\n{text}"
+            analysis += f"\n{text}"
         except:
             pass
     result = await brain.process(f"Загружен файл: {file.filename}, размер: {size} байт, путь: {save_path}")
     return {"filename": file.filename, "size": size, "path": save_path, "analysis": analysis, "ai_response": result}
 
+@app.get("/api/skills")
+async def api_skills():
+    skills = {}
+    for name, s in brain.skills.items():
+        skills[name] = {
+            "description": s.get("description", ""),
+            "steps": len(s.get("steps", [])),
+            "times_used": s.get("times_used", 0),
+            "success_rate": s.get("success_rate", 1.0)
+        }
+    return {"skills": skills, "total": len(skills)}
 
-DASHBOARD_HTML = """<!DOCTYPE html>
-<html lang="ru">
-<head>
+@app.get("/api/knowledge")
+async def api_knowledge():
+    from ai.knowledge import KnowledgeBase
+    result = {}
+    for name in ["files", "processes", "system", "network", "watchdog", "designer", "platform"]:
+        try:
+            kb = KnowledgeBase(name)
+            result[name] = {"entries": len(kb.entries), "solutions": len(kb.solutions), "sources": len(kb.sources)}
+        except:
+            pass
+    return result
+
+@app.get("/api/models")
+async def api_models():
+    config_path = Path(__file__).parent.parent / "config" / "api.json"
+    config = json.loads(config_path.read_text(encoding="utf-8")) if config_path.exists() else {}
+    return {
+        "provider": config.get("provider", "unknown"),
+        "default_model": config.get("default_model", ""),
+        "smart_model": config.get("smart_model", ""),
+        "openrouter_models": config.get("openrouter_models", {}),
+        "max_tokens": config.get("max_tokens", 1024),
+        "conversation_length": len(brain.conversation) if hasattr(brain, 'conversation') else 0
+    }
+
+@app.get("/api/stats")
+async def api_stats():
+    modules_info = bus.list_modules()
+    from ai.knowledge import KnowledgeBase
+    total_knowledge = 0
+    total_solutions = 0
+    for name in ["files", "processes", "system", "network", "watchdog", "designer", "platform"]:
+        try:
+            kb = KnowledgeBase(name)
+            total_knowledge += len(kb.entries)
+            total_solutions += len(kb.solutions)
+        except:
+            pass
+    return {
+        "modules": {"total": len(modules_info), "running": sum(1 for m in modules_info.values() if m["status"] == "running")},
+        "brain": {"skills": len(brain.skills), "patterns": len(brain.patterns) if hasattr(brain, 'patterns') else 0, "history": len(brain.history), "conversation": len(brain.conversation) if hasattr(brain, 'conversation') else 0},
+        "knowledge": {"entries": total_knowledge, "solutions": total_solutions},
+        "trainer": {"commands_observed": sum(trainer.command_counts.values()), "unique_commands": len(trainer.command_counts)}
+    }
+
+@app.post("/api/knowledge/seed")
+async def api_seed_knowledge():
+    import subprocess
+    result = subprocess.run(["python", "knowledge/seed.py"], capture_output=True, text=True, cwd=str(Path(__file__).parent.parent))
+    return {"status": "ok", "output": result.stdout, "errors": result.stderr}
+
+
+DASHBOARD_HTML = r"""<!DOCTYPE html>
+<html lang="ru"><head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>AI-OS</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
---bg:#0A0A0A;--card:#151515;--card-hover:#1a1a1a;--card-border:rgba(255,255,255,0.06);
---glass:rgba(255,255,255,0.04);--glass-border:rgba(255,255,255,0.08);
---text:#F5F5F5;--text2:#9a9a9a;--text3:#555;
---accent:#6366F1;--accent-g:rgba(99,102,241,0.12);
---green:#22C55E;--green-g:rgba(34,197,94,0.12);
---amber:#F59E0B;--amber-g:rgba(245,158,11,0.12);
---red:#EF4444;--red-g:rgba(239,68,68,0.12);
---r:16px;--rs:10px;
+--bg:#0A0A0A;--bg-w:#0F0E0A;--bg-c:#1A0F0F;
+--glass:rgba(255,255,255,0.06);--glass2:rgba(255,255,255,0.04);--glass-b:rgba(255,255,255,0.1);
+--text:#F5F5F5;--t2:#9a9a9a;--t3:#555;
+--accent:#6366F1;--accent2:#818CF8;
+--green:#22C55E;--amber:#F59E0B;--red:#EF4444;--cyan:#06B6D4;--purple:#A855F7;
+--r:20px;--rs:14px;
 }
-html,body{height:100%;font-family:-apple-system,'SF Pro Display','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+html,body{height:100%;font-family:'SF Pro Display','Inter',-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;font-size:17px;transition:background 1.2s ease}
 
-/* Animated BG */
-.bg-layer{position:fixed;top:0;left:0;right:0;bottom:0;z-index:0;overflow:hidden}
-.bg-layer::before{content:'';position:absolute;width:140%;height:140%;top:-20%;left:-20%;
-background:radial-gradient(ellipse at 30% 20%,rgba(99,102,241,0.08) 0%,transparent 50%),
-radial-gradient(ellipse at 70% 80%,rgba(239,68,68,0.05) 0%,transparent 50%),
-radial-gradient(ellipse at 50% 50%,rgba(34,197,94,0.04) 0%,transparent 60%);
-animation:bgMove 20s ease-in-out infinite alternate}
-@keyframes bgMove{0%{transform:translate(0,0) rotate(0deg)}100%{transform:translate(-3%,2%) rotate(2deg)}}
+/* === TOP BAR === */
+.top{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:10px 24px;height:40px;background:rgba(10,10,10,0.7);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border-bottom:1px solid rgba(255,255,255,0.04)}
+.top-l{display:flex;align-items:center;gap:10px}
+.sdot{width:9px;height:9px;border-radius:50%;background:var(--green);transition:all 1s}
+.sdot.w{background:var(--amber)}.sdot.c{background:var(--red);animation:glow 3s ease infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)}50%{box-shadow:0 0 8px 3px rgba(239,68,68,0.2)}}
+.top-time{font-size:13px;color:var(--t2);font-weight:400;letter-spacing:.3px}
+.top-ctx{font-size:13px;color:var(--t3);font-weight:500}
 
-.app{display:flex;flex-direction:column;height:100vh;max-width:800px;margin:0 auto;position:relative;z-index:1}
+/* === MAIN CHAT === */
+.wrap{position:fixed;top:40px;left:0;right:0;bottom:0;display:flex;flex-direction:column;max-width:740px;margin:0 auto}
+.scroll{flex:1;overflow-y:auto;padding:24px 20px 12px;display:flex;flex-direction:column;gap:8px;scroll-behavior:smooth}
+.scroll::-webkit-scrollbar{width:0}
 
-/* HEADER */
-.hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;flex-shrink:0}
-.hdr-left{display:flex;align-items:center;gap:14px}
-.traffic{display:flex;gap:6px}
-.traffic-dot{width:12px;height:12px;border-radius:50%}
-.td-r{background:#EF4444}.td-y{background:#F59E0B}.td-g{background:#22C55E}
-.hdr-time{color:var(--text2);font-size:13px;font-weight:400}
-.hdr-right{color:var(--text2);font-size:13px}
-
-/* STATUS BAR */
-.status-bar{margin:0 20px 8px;padding:10px 16px;border-radius:var(--r);display:flex;align-items:center;gap:10px;transition:all 0.3s}
-.sb-ok{background:var(--green-g);color:var(--green)}
-.sb-warn{background:var(--amber-g);color:var(--amber)}
-.sb-crit{background:var(--red-g);color:var(--red);animation:critPulse 2s ease infinite}
-@keyframes critPulse{0%,100%{opacity:1}50%{opacity:0.7}}
-.sb-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
-.sb-text{font-size:13px;font-weight:500}
-.sb-btn{margin-left:auto;padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:inherit}
-.sb-btn-fix{background:var(--red);color:white}
-.sb-btn-fix:hover{background:#dc2626}
-
-/* CHAT */
-.chat{flex:1;overflow-y:auto;padding:12px 20px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
-.chat::-webkit-scrollbar{width:3px}.chat::-webkit-scrollbar-thumb{background:var(--card-border);border-radius:3px}
-
-.msg{max-width:82%;animation:msgIn 0.3s ease}
-@keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.msg-user{align-self:flex-end}
-.msg-ai{align-self:flex-start}
-
-.bubble{padding:14px 18px;border-radius:var(--r);font-size:15px;line-height:1.55;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
-.msg-user .bubble{background:rgba(255,255,255,0.08);border:1px solid var(--glass-border);border-bottom-right-radius:4px;color:var(--text)}
-.msg-ai .bubble{background:rgba(255,255,255,0.04);border:1px solid var(--card-border);border-bottom-left-radius:4px}
-.msg-ai .msg-name{font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase}
+/* Messages */
+.m{max-width:80%;animation:mIn .18s ease}
+@keyframes mIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.m-u{align-self:flex-end}.m-a{align-self:flex-start}
+.b{padding:14px 20px;border-radius:var(--r);font-size:17px;line-height:1.6;backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px)}
+.m-u .b{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-bottom-right-radius:6px}
+.m-a .b{background:var(--glass2);border:1px solid rgba(255,255,255,0.06);border-bottom-left-radius:6px}
+.m-lbl{font-size:10px;color:var(--t3);margin-bottom:3px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
 
 /* Typing */
-.typing{display:flex;gap:5px;padding:14px 18px}
-.typing-d{width:8px;height:8px;background:var(--text3);border-radius:50%;animation:tBounce 1.4s ease infinite}
-.typing-d:nth-child(2){animation-delay:.2s}.typing-d:nth-child(3){animation-delay:.4s}
-@keyframes tBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-8px)}}
+.typ-wrap{display:flex;align-items:center;gap:6px;padding:16px 20px}
+.typ-dots{display:flex;gap:5px}
+.td{width:8px;height:8px;background:var(--t3);border-radius:50%;animation:tb 1.4s ease infinite}
+.td:nth-child(2){animation-delay:.15s}.td:nth-child(3){animation-delay:.3s}
+@keyframes tb{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+.typ-txt{font-size:13px;color:var(--t3);margin-left:4px}
 
-/* MODULE GRID */
-.mod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
-.mod-tile{background:var(--card);border:1px solid var(--card-border);border-radius:var(--rs);padding:14px 12px;text-align:center;cursor:pointer;transition:all 0.2s}
-.mod-tile:hover{background:var(--card-hover);border-color:rgba(255,255,255,0.12);transform:translateY(-2px)}
-.mod-tile:active{transform:scale(0.97)}
-.mod-icon{font-size:24px;margin-bottom:6px;display:block}
-.mod-name{font-size:12px;color:var(--text2);font-weight:500}
+/* === GLASS CARDS (smart cards in chat) === */
+.gc{background:rgba(255,255,255,0.05);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border:1px solid rgba(255,255,255,0.08);border-radius:var(--rs);padding:16px;margin-top:8px}
+.gc-title{font-size:12px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;font-weight:600;display:flex;align-items:center;gap:8px}
+.gc-icon{font-size:16px}
 
-/* SMART CARDS */
-.scard{background:var(--card);border:1px solid var(--card-border);border-radius:var(--rs);padding:16px;margin-top:10px;backdrop-filter:blur(10px)}
-.scard-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;font-weight:600}
-.scard-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0}
-.scard-row+.scard-row{border-top:1px solid var(--card-border)}
-.sc-l{color:var(--text2);font-size:13px}.sc-v{font-size:15px;font-weight:600}
-.sc-ok{color:var(--green)}.sc-warn{color:var(--amber)}.sc-crit{color:var(--red)}
+/* Key-value */
+.kv{display:flex;justify-content:space-between;align-items:center;padding:7px 0}
+.kv+.kv{border-top:1px solid rgba(255,255,255,0.04)}
+.kv-k{font-size:14px;color:var(--t2)}.kv-v{font-size:15px;font-weight:600}
 
-.bar-t{width:100%;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;margin-top:6px;overflow:hidden}
-.bar-f{height:100%;border-radius:3px;transition:width 0.6s cubic-bezier(.4,0,.2,1)}
+/* Progress bar */
+.pb{height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-top:6px}
+.pb-f{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
 
-/* Alert cards - 3 states */
-.alert{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--rs);font-size:13px;font-weight:500;margin-top:6px}
-.alert-ok{background:var(--green-g);color:var(--green)}
-.alert-warn{background:var(--amber-g);color:var(--amber)}
-.alert-crit{background:var(--red-g);color:var(--red);animation:critPulse 2s ease infinite}
-.alert-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
-.alert-btn{margin-left:auto;padding:6px 16px;border-radius:8px;border:none;background:var(--red);color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
-.alert-btn:hover{background:#dc2626}
+/* Stats strip */
+.stats{display:flex;gap:1px;margin-top:10px;border-radius:var(--rs);overflow:hidden}
+.st{flex:1;background:rgba(255,255,255,0.04);padding:14px 10px;text-align:center;backdrop-filter:blur(20px)}
+.st-n{font-size:24px;font-weight:700;line-height:1}.st-l{font-size:10px;color:var(--t3);margin-top:5px;text-transform:uppercase;letter-spacing:.4px}
+.cg{color:var(--green)}.ca{color:var(--accent2)}.cc{color:var(--cyan)}.cp{color:var(--purple)}.cw{color:var(--amber)}.cr{color:var(--red)}
 
-/* Diag card */
-.diag{background:var(--card);border:1px solid var(--card-border);border-radius:var(--rs);padding:16px;margin-top:10px}
-.diag-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.diag-title{font-size:14px;font-weight:600}.diag-icon{font-size:20px}
-.diag-status{font-size:13px;margin-bottom:8px}
-.diag-actions{display:flex;gap:8px;margin-top:10px}
-.diag-btn{padding:8px 16px;border-radius:8px;border:1px solid var(--card-border);background:var(--card);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit;transition:all 0.15s}
-.diag-btn:hover{background:var(--card-hover);border-color:var(--accent)}
-.diag-btn-primary{background:var(--accent);border-color:var(--accent);color:white}
-.diag-btn-primary:hover{background:#5558e6}
+/* Gauge */
+.gauges{display:flex;gap:10px;margin-top:10px}
+.ga{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:var(--rs);padding:16px;text-align:center;backdrop-filter:blur(20px)}
+.ga svg{width:80px;height:80px;display:block;margin:0 auto 6px}
+.ga-l{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px;font-weight:600}
+.ga-s{font-size:11px;color:var(--t3);margin-top:2px}
+
+/* Alerts */
+.al{display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:var(--rs);font-size:14px;font-weight:500;margin-top:8px;backdrop-filter:blur(20px)}
+.al-ok{background:rgba(34,197,94,0.08);color:var(--green);border:1px solid rgba(34,197,94,0.12)}
+.al-w{background:rgba(245,158,11,0.08);color:var(--amber);border:1px solid rgba(245,158,11,0.12)}
+.al-c{background:rgba(239,68,68,0.08);color:var(--red);border:1px solid rgba(239,68,68,0.12)}
+.al-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
+.al-txt{flex:1}
+
+/* Action buttons on cards */
+.acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.abtn{padding:9px 18px;border-radius:10px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.abtn-p{background:var(--accent);color:white}.abtn-p:hover{background:#5558e6;transform:translateY(-1px)}
+.abtn-d{background:var(--red);color:white}.abtn-d:hover{background:#dc2626}
+.abtn-s{background:rgba(255,255,255,0.06);color:var(--t2);border:1px solid rgba(255,255,255,0.08)}.abtn-s:hover{border-color:var(--accent);color:var(--accent2)}
+
+/* Module grid (appears briefly) */
+.modgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.modtile{background:rgba(255,255,255,0.05);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid rgba(255,255,255,0.08);border-radius:var(--rs);padding:16px 10px;text-align:center;cursor:pointer;transition:all .15s}
+.modtile:hover{background:rgba(255,255,255,0.09);transform:translateY(-2px)}
+.modtile:active{transform:scale(.95)}
+.modtile-i{font-size:24px;margin-bottom:6px;display:block}
+.modtile-n{font-size:11px;color:var(--t2);font-weight:500}
+
+/* File card */
+.fcard{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:var(--rs);padding:16px;margin-top:8px;display:flex;align-items:center;gap:14px}
+.fcard-icon{font-size:28px;width:48px;height:48px;background:rgba(255,255,255,0.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.fcard-info{flex:1;min-width:0}
+.fcard-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fcard-size{font-size:12px;color:var(--t3);margin-top:2px}
 
 /* Process table */
-.ptbl{width:100%;font-size:12px;border-collapse:collapse;margin-top:8px}
-.ptbl th{color:var(--text3);font-weight:500;text-align:left;padding:4px 8px 8px;font-size:11px;text-transform:uppercase;letter-spacing:.3px}
-.ptbl td{padding:5px 8px;color:var(--text2);border-top:1px solid var(--card-border)}
+.ptbl{width:100%;font-size:13px;border-collapse:collapse;margin-top:8px}
+.ptbl th{color:var(--t3);font-weight:500;text-align:left;padding:8px;font-size:10px;text-transform:uppercase;letter-spacing:.3px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.ptbl td{padding:7px 8px;color:var(--t2);border-bottom:1px solid rgba(255,255,255,0.03)}
 .ptbl td:first-child{color:var(--text);font-weight:500}
 
 /* Code block */
-.cblock{background:#0d0d0d;border:1px solid var(--card-border);border-radius:8px;padding:12px;margin-top:8px;font-family:'Cascadia Code','Fira Code',monospace;font-size:12px;color:var(--text2);white-space:pre-wrap;max-height:180px;overflow-y:auto;line-height:1.5}
+.cblk{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px;font-family:'SF Mono','Cascadia Code','Fira Code',monospace;font-size:13px;color:var(--t2);white-space:pre-wrap;max-height:200px;overflow-y:auto;line-height:1.5;margin-top:8px}
 
-/* INPUT */
-.input-area{padding:10px 20px 20px;flex-shrink:0}
-.input-row{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:28px;padding:6px 6px 6px 20px;backdrop-filter:blur(20px);transition:all 0.2s}
-.input-row:focus-within{border-color:rgba(99,102,241,0.4);box-shadow:0 0 0 3px var(--accent-g)}
-.input-f{flex:1;background:transparent;border:none;color:var(--text);font-size:15px;font-family:inherit;outline:none;padding:8px 0}
-.input-f::placeholder{color:var(--text3)}
-.btn-mic{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#ef4444,#f59e0b);border:none;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;font-size:16px}
-.btn-mic:hover{transform:scale(1.05);box-shadow:0 0 16px rgba(239,68,68,0.3)}
-.btn-send{width:42px;height:42px;border-radius:50%;background:var(--accent);border:none;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;font-size:18px}
-.btn-send:hover{background:#5558e6;transform:scale(1.05)}
-.mic-label{text-align:center;margin-top:6px;font-size:11px;color:var(--text3)}
+/* Model badge */
+.mbadge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(99,102,241,0.1);color:var(--accent2);border:1px solid rgba(99,102,241,0.15);margin-top:10px}
 
 /* Chips */
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.chip{padding:7px 14px;background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;color:var(--text2);font-size:12px;cursor:pointer;transition:all 0.15s;font-family:inherit;backdrop-filter:blur(10px)}
-.chip:hover{background:var(--accent-g);border-color:var(--accent);color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip{padding:9px 18px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:24px;color:var(--t2);font-size:14px;cursor:pointer;transition:all .15s;font-family:inherit;backdrop-filter:blur(10px)}
+.chip:hover{background:rgba(99,102,241,0.1);border-color:rgba(99,102,241,0.25);color:var(--accent2)}
 
-/* Notification toast */
-.toast-container{position:fixed;top:20px;right:20px;z-index:1000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
-.toast{padding:14px 20px;border-radius:var(--rs);font-size:13px;font-weight:500;pointer-events:auto;cursor:pointer;animation:toastIn 0.3s ease;backdrop-filter:blur(20px);max-width:360px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,0.4)}
-.toast-ok{background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--green)}
-.toast-warn{background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:var(--amber)}
-.toast-crit{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:var(--red);animation:toastIn 0.3s ease,critPulse 2s ease infinite}
-@keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
-.toast .toast-close{margin-left:auto;opacity:0.5;font-size:16px}
-.toast .toast-close:hover{opacity:1}
+/* === INPUT === */
+.inp-area{padding:10px 20px 24px;flex-shrink:0}
+.inp-row{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:var(--r);padding:6px 8px 6px 20px;backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);transition:all .2s}
+.inp-row:focus-within{border-color:rgba(99,102,241,0.3);box-shadow:0 0 0 3px rgba(99,102,241,0.07)}
+.inp-f{flex:1;background:transparent;border:none;color:var(--text);font-size:17px;font-family:inherit;outline:none;padding:10px 0}
+.inp-f::placeholder{color:var(--t3)}
 
-/* Mic button */
-.btn-mic{width:42px;height:42px;border-radius:50%;background:var(--card);border:1px solid var(--card-border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;font-size:16px}
-.btn-mic:hover{border-color:var(--accent);color:var(--accent)}
-.btn-mic.recording{background:var(--red);border-color:var(--red);color:white;animation:micPulse 1.5s ease infinite}
-@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)}50%{box-shadow:0 0 0 12px rgba(239,68,68,0)}}
+/* Buttons */
+.ib{width:44px;height:44px;border-radius:14px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;font-size:17px}
+.ib-send{background:var(--accent);color:white}.ib-send:hover{background:#5558e6;transform:scale(1.05)}
+.ib-g{background:transparent;border:1px solid rgba(255,255,255,0.07);color:var(--t3)}.ib-g:hover{border-color:var(--accent);color:var(--accent2)}
+.ib-mic{background:linear-gradient(135deg,var(--red),var(--amber));color:white;border:none}
+.ib-mic:hover{transform:scale(1.05);box-shadow:0 0 16px rgba(239,68,68,0.25)}
+.ib-mic.rec{animation:mpulse 1.5s ease infinite}
+@keyframes mpulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.3)}50%{box-shadow:0 0 0 12px rgba(239,68,68,0)}}
 
-.hidden{display:none!important}
-@media(max-width:600px){.msg{max-width:92%}.mod-grid{grid-template-columns:repeat(2,1fr)}.hdr{padding:12px 16px}.chat{padding:10px 16px}.input-area{padding:8px 16px 16px}}
-</style>
-</head>
+/* Toast */
+.toasts{position:fixed;top:48px;right:16px;z-index:200;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{padding:14px 18px;border-radius:var(--rs);font-size:14px;font-weight:500;pointer-events:auto;cursor:pointer;animation:tIn .18s ease;backdrop-filter:blur(30px);max-width:340px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
+.toast-ok{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.2);color:var(--green)}
+.toast-w{background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.2);color:var(--amber)}
+.toast-c{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.2);color:var(--red)}
+@keyframes tIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+/* Responsive: phone = only chat + floating mic */
+@media(max-width:600px){
+  .wrap{max-width:100%}
+  .m{max-width:90%}
+  .gauges{flex-direction:column}
+  .modgrid{grid-template-columns:repeat(2,1fr)}
+  .stats{flex-wrap:wrap}.st{min-width:45%}
+  .b{font-size:16px;padding:12px 16px}
+  .inp-area{padding:6px 12px 16px}
+  .top{padding:8px 16px}
+}
+</style></head>
 <body>
-<div class="bg-layer"></div>
-<div class="toast-container" id="toasts"></div>
-<div class="app">
-<div class="hdr">
-<div class="hdr-left">
-<div class="traffic"><div class="traffic-dot td-r"></div><div class="traffic-dot td-y"></div><div class="traffic-dot td-g"></div></div>
-<div class="hdr-time" id="hTime"></div>
-</div>
-<div class="hdr-right">AI-OS</div>
-</div>
 
-<div id="statusBar" class="status-bar sb-ok"><div class="sb-dot"></div><span class="sb-text" id="sbText">System Online</span></div>
-
-<div class="chat" id="chat"></div>
-
-<div class="input-area">
-<div class="input-row">
-<button class="btn-mic" id="micBtn" onclick="toggleMic()" title="Голосовой ввод">&#127908;</button>
-<button class="btn-mic" onclick="document.getElementById('fileInp').click()" title="Прикрепить файл">&#128206;</button>
-<input type="file" id="fileInp" style="display:none" onchange="uploadFile(this)">
-<input type="text" class="input-f" id="inp" placeholder="Напиши или скажи голосом..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();send()}">
-<button class="btn-send" onclick="send()" title="Отправить">&#8593;</button>
+<div class="top">
+  <div class="top-l"><div class="sdot" id="sd"></div><span class="top-time" id="sT"></span></div>
+  <span class="top-ctx" id="sCtx">AI-OS</span>
 </div>
-<div class="mic-label"></div>
-</div>
+<div class="toasts" id="toasts"></div>
+
+<div class="wrap">
+  <div class="scroll" id="chat"></div>
+  <div class="inp-area">
+    <div class="inp-row">
+      <input type="text" class="inp-f" id="inp" placeholder="Скажи что-нибудь..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();send()}">
+      <button class="ib ib-g" onclick="document.getElementById('fI').click()" title="File">&#128206;</button>
+      <input type="file" id="fI" style="display:none" onchange="upFile(this)">
+      <button class="ib ib-mic" id="mic" onclick="togMic()" title="Voice">&#127908;</button>
+      <button class="ib ib-send" onclick="send()">&#8593;</button>
+    </div>
+  </div>
 </div>
 
 <script>
 const C=document.getElementById('chat'),I=document.getElementById('inp');
-function uTime(){const n=new Date(),h=String(n.getHours()).padStart(2,'0'),m=String(n.getMinutes()).padStart(2,'0'),d=String(n.getDate()).padStart(2,'0'),mo=String(n.getMonth()+1).padStart(2,'0');document.getElementById('hTime').textContent=h+':'+m+' | '+d+'.'+mo+'.'+n.getFullYear()}
-uTime();setInterval(uTime,30000);
 
-function addMsg(c,t='ai'){
-const m=document.createElement('div');m.className='msg msg-'+t;
-const b=document.createElement('div');b.className='bubble';
-if(t==='ai'){const n=document.createElement('div');n.className='msg-name';n.textContent='AI-OS';m.appendChild(n)}
-if(typeof c==='string')b.innerHTML=c;else b.appendChild(c);
-m.appendChild(b);C.appendChild(m);C.scrollTop=C.scrollHeight;return b}
+/* Time */
+function uT(){const n=new Date(),h=String(n.getHours()).padStart(2,'0'),m=String(n.getMinutes()).padStart(2,'0'),d=String(n.getDate()).padStart(2,'0'),mo=String(n.getMonth()+1).padStart(2,'0');document.getElementById('sT').textContent=h+':'+m+' | '+d+'.'+mo+'.'+n.getFullYear()}
+uT();setInterval(uT,30000);
 
-function showTyping(){const m=document.createElement('div');m.className='msg msg-ai';m.id='typ';
-m.innerHTML='<div class="msg-name">AI-OS</div><div class="bubble"><div class="typing"><div class="typing-d"></div><div class="typing-d"></div><div class="typing-d"></div></div><div style="color:var(--text3);font-size:13px;margin-top:4px">Ищу решение...</div></div>';
-C.appendChild(m);C.scrollTop=C.scrollHeight}
-function hideTyping(){const t=document.getElementById('typ');if(t)t.remove()}
+/* Messages */
+function add(c,t='a'){
+  const m=document.createElement('div');m.className='m m-'+t;
+  const b=document.createElement('div');b.className='b';
+  if(t==='a'){const l=document.createElement('div');l.className='m-lbl';l.textContent='AI-OS';m.appendChild(l)}
+  if(typeof c==='string')b.innerHTML=c;else b.appendChild(c);
+  m.appendChild(b);C.appendChild(m);C.scrollTop=C.scrollHeight;return b;
+}
+function showTyp(){const m=document.createElement('div');m.className='m m-a';m.id='typ';m.innerHTML='<div class="m-lbl">AI-OS</div><div class="b"><div class="typ-wrap"><div class="typ-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div><span class="typ-txt">Ищу решение...</span></div></div>';C.appendChild(m);C.scrollTop=C.scrollHeight}
+function hideTyp(){const t=document.getElementById('typ');if(t)t.remove()}
 
-function dig(o){if(!o)return o;if(o.result&&typeof o.result==='object'){if(o.result.result!==undefined)return o.result.result;return o.result}return o}
+/* === SMART CARD BUILDERS === */
 
-function memCard(d){
-const p=d.UsedPercent||0,cls=p>90?'sc-crit':p>75?'sc-warn':'sc-ok',bc=p>90?'var(--red)':p>75?'var(--amber)':'var(--green)';
-const e=document.createElement('div');e.className='scard';
-e.innerHTML='<div class="scard-title">Память</div><div class="scard-row"><span class="sc-l">Занято</span><span class="sc-v '+cls+'">'+p+'%</span></div><div class="bar-t"><div class="bar-f" style="width:'+p+'%;background:'+bc+'"></div></div><div class="scard-row"><span class="sc-l">Всего</span><span class="sc-v">'+(d.TotalGB||d.TotalMB)+' '+(d.TotalGB?'GB':'MB')+'</span></div><div class="scard-row"><span class="sc-l">Свободно</span><span class="sc-v">'+(d.FreeGB||d.FreeMB)+' '+(d.FreeGB?'GB':'MB')+'</span></div>';
-return e}
-
-function diskCard(items){
-const e=document.createElement('div');e.className='scard';let h='<div class="scard-title">Диски</div>';
-items.forEach(d=>{const p=d.percent||d.used_percent||0,cls=p>90?'sc-crit':p>75?'sc-warn':'sc-ok',bc=p>90?'var(--red)':p>75?'var(--amber)':'var(--green)';
-h+='<div class="scard-row"><span class="sc-l">'+d.drive+'</span><span class="sc-v '+cls+'">'+p+'%</span></div><div class="bar-t"><div class="bar-f" style="width:'+p+'%;background:'+bc+'"></div></div><div class="scard-row"><span class="sc-l">Свободно</span><span class="sc-v">'+d.free_gb+' GB</span></div>'});
-e.innerHTML=h;return e}
-
-function healthCard(d){
-const e=document.createElement('div');let h='';const alerts=d.alerts||[];
-const sb=document.getElementById('statusBar'),st=document.getElementById('sbText');
-const status=d.status||'OK';
-sb.className='status-bar '+(status==='OK'?'sb-ok':status==='CRITICAL'?'sb-crit':'sb-warn');
-st.textContent=status==='OK'?'System Online':status==='CRITICAL'?'CRITICAL':'Warning';
-
-if(alerts.length===0){
-h+='<div class="alert alert-ok"><div class="alert-dot"></div>Всё в порядке</div>'}
-else{alerts.forEach(a=>{
-const c=a.level==='CRITICAL'?'alert-crit':'alert-warn';
-const icon=a.level==='CRITICAL'?'&#9888;':'&#9888;';
-h+='<div class="alert '+c+'"><div class="alert-dot"></div>'+a.message+(a.level==='CRITICAL'?'<button class="alert-btn" onclick="quick(&quot;watchdog.heal&quot;)">Починить</button>':'')+'</div>'})}
-e.innerHTML=h;return e}
-
-function procCard(items){
-const e=document.createElement('div');e.className='scard';
-let h='<div class="scard-title">Процессы</div><table class="ptbl"><tr><th>Имя</th><th>PID</th><th>RAM</th><th>CPU</th></tr>';
-(Array.isArray(items)?items:[]).slice(0,8).forEach(p=>{h+='<tr><td>'+p.Name+'</td><td>'+p.Id+'</td><td>'+p.MemMB+' MB</td><td>'+(p.CPU_s||'-')+'s</td></tr>'});
-h+='</table>';e.innerHTML=h;return e}
-
-function modGrid(){
-const mods=[
-{icon:'&#128193;',name:'Файлы',cmd:'files.list'},
-{icon:'&#9881;',name:'Процессы',cmd:'processes.list top=5'},
-{icon:'&#127760;',name:'Сеть',cmd:'network.ping host=google.com'},
-{icon:'&#10084;',name:'Здоровье',cmd:'watchdog.check'},
-{icon:'&#128187;',name:'CPU',cmd:'system.cpu'},
-{icon:'&#128191;',name:'Диски',cmd:'files.disk_usage'},
-{icon:'&#128272;',name:'Версии',cmd:'versions.list'},
-{icon:'&#127912;',name:'Дизайн',cmd:'designer.colors'},
-{icon:'&#129302;',name:'ИИ',cmd:'report'}
-];
-const g=document.createElement('div');g.className='mod-grid';
-mods.forEach(m=>{const d=document.createElement("div");d.className="mod-tile";d.onclick=()=>quick(m.cmd);d.innerHTML='<span class="mod-icon">'+m.icon+'</span><span class="mod-name">'+m.name+'</span>';g.appendChild(d)});
-return g}
-
-function tryCard(mod,cmd,d){
-if(!d)return null;
-if(d.UsedPercent!==undefined&&(d.TotalGB||d.TotalMB))return memCard(d);
-if(Array.isArray(d)&&d[0]&&(d[0].drive||d[0].percent!==undefined))return diskCard(d);
-if(d.checks&&d.alerts!==undefined)return healthCard(d);
-if(Array.isArray(d)&&d[0]&&d[0].Name&&d[0].Id)return procCard(d);
-return null}
-
-function fmtResult(data){
-if(data.result&&data.result.comment){
-const f=document.createElement('div');f.innerHTML='<div style="margin-bottom:8px">'+data.result.comment+'</div>';
-if(data.result.results){data.result.results.forEach(r=>{
-const inner=dig(r.result);const card=tryCard(r.module,r.command,inner);
-if(card)f.appendChild(card);
-else if(inner){const c=document.createElement('div');c.className='cblock';c.textContent=typeof inner==='string'?inner:JSON.stringify(inner,null,2);f.appendChild(c)}})}
-return f}
-if(data.result&&typeof data.result==='string')return data.result;
-if(data.result){const inner=dig(data.result);const card=tryCard('','',inner);
-if(card){const f=document.createElement('div');f.appendChild(card);return f}
-const f=document.createElement('div');const c=document.createElement('div');c.className='cblock';c.textContent=typeof inner==='string'?inner:JSON.stringify(inner,null,2);f.appendChild(c);return f}
-return JSON.stringify(data,null,2)}
-
-async function send(){
-const t=I.value.trim();if(!t)return;I.value='';addMsg(t,'user');showTyping();
-try{const r=await fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:t})});
-const d=await r.json();hideTyping();addMsg(fmtResult(d),'ai')}
-catch(e){hideTyping();addMsg('<span style="color:var(--red)">Ошибка: '+e.message+'</span>','ai')}}
-
-function quick(t){I.value=t;send()}
-
-async function uploadFile(input){
-if(!input.files||!input.files[0])return;
-const file=input.files[0];
-addMsg('&#128206; '+file.name+' ('+Math.round(file.size/1024)+' KB)','user');
-showTyping();
-const fd=new FormData();fd.append('file',file);
-try{
-const r=await fetch('/api/upload',{method:'POST',body:fd});
-const d=await r.json();hideTyping();
-const frag=document.createElement('div');
-let html='<div style="margin-bottom:8px">&#9989; Файл <strong>'+d.filename+'</strong> загружен</div>';
-html+='<div class="scard"><div class="scard-title">Файл</div>';
-html+='<div class="scard-row"><span class="sc-l">Имя</span><span class="sc-v">'+d.filename+'</span></div>';
-html+='<div class="scard-row"><span class="sc-l">Размер</span><span class="sc-v">'+Math.round(d.size/1024)+' KB</span></div>';
-html+='<div class="scard-row"><span class="sc-l">Путь</span><span class="sc-v" style="font-size:11px;word-break:break-all">'+d.path+'</span></div>';
-html+='</div>';
-if(d.ai_response&&typeof d.ai_response==='string')html+='<div style="margin-top:8px">'+d.ai_response+'</div>';
-frag.innerHTML=html;addMsg(frag,'ai');
-}catch(e){hideTyping();addMsg('Ошибка загрузки: '+e.message,'ai')}
-input.value='';}
-
-async function init(){
-try{
-const[health,st]=await Promise.all([fetch('/api/health').then(r=>r.json()),fetch('/api/status').then(r=>r.json())]);
-const sb=document.getElementById('statusBar'),stx=document.getElementById('sbText');
-const s=health.status||'OK';
-sb.className='status-bar '+(s==='OK'?'sb-ok':s==='CRITICAL'?'sb-crit':'sb-warn');
-stx.textContent=s==='OK'?'System Online':s;
-if(s!=='OK'&&health.alerts){
-sb.innerHTML='<div class="sb-dot"></div><span class="sb-text">'+health.alerts[0].message+'</span>'+(s==='CRITICAL'?'<button class="sb-btn sb-btn-fix" onclick="quick(&quot;watchdog.heal&quot;)">Починить</button>':'')}
-
-const mc=Object.keys(st.modules).length;
-const rc=Object.values(st.modules).filter(m=>m.status==='running').length;
-const w=document.createElement('div');
-let h='Привет! Я <strong>AI-OS</strong>. '+rc+'/'+mc+' модулей активно.';
-
-if(health.alerts&&health.alerts.length>0){
-health.alerts.forEach(a=>{const c=a.level==='CRITICAL'?'alert-crit':'alert-warn';
-h+='<div class="alert '+c+'" style="margin-top:8px"><div class="alert-dot"></div>'+a.message+(a.level==='CRITICAL'?'<button class="alert-btn" onclick="quick(&quot;watchdog.heal&quot;)">Починить</button>':'')+'</div>'})}
-else{h+='<div class="alert alert-ok" style="margin-top:8px"><div class="alert-dot"></div>Система в порядке</div>'}
-
-w.innerHTML=h;
-const bubble=addMsg(w,'ai');
-bubble.appendChild(modGrid());
-
-const chips=document.createElement('div');chips.className='chips';
-['Здоровье','Память','Процессы','Диски','Сеть'].forEach(n=>{
-const cmds={'Здоровье':'проверь здоровье','Память':'что с памятью?','Процессы':'покажи процессы','Диски':'сколько места на дисках?','Сеть':'проверь сеть'};
-const ch=document.createElement("span");ch.className="chip";ch.textContent=n;ch.onclick=()=>quick(cmds[n]);chips.appendChild(ch)});
-bubble.appendChild(chips);
-}catch(e){addMsg('Запускаюсь...','ai')}
-I.focus()}
-
-init();
-// === NOTIFICATIONS ===
-let lastHealthStatus='OK';
-function showToast(msg,level='ok',duration=6000){
-const tc=document.getElementById('toasts');
-const t=document.createElement('div');
-t.className='toast toast-'+level;
-t.innerHTML='<span>'+msg+'</span><span class="toast-close" onclick="this.parentElement.remove()">&#10005;</span>';
-tc.appendChild(t);
-setTimeout(()=>{if(t.parentElement)t.style.opacity='0';setTimeout(()=>t.remove(),300)},duration);
-// Browser notification
-if(Notification.permission==='granted'&&level!=='ok'){new Notification('AI-OS',{body:msg,icon:'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>'})}
+function gauge(pct,color,label,sub){
+  const c=2*Math.PI*38,off=c*(1-pct/100),col=pct>90?'var(--red)':pct>75?'var(--amber)':color;
+  return '<div class="ga"><div class="ga-l">'+label+'</div><svg viewBox="0 0 90 90"><circle cx="45" cy="45" r="38" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="7"/><circle cx="45" cy="45" r="38" fill="none" stroke="'+col+'" stroke-width="7" stroke-dasharray="'+c+'" stroke-dashoffset="'+off+'" stroke-linecap="round" transform="rotate(-90 45 45)" style="transition:stroke-dashoffset .8s ease"/><text x="45" y="45" text-anchor="middle" dy=".35em" fill="var(--text)" font-size="18" font-weight="700">'+pct+'%</text></svg><div class="ga-s">'+(sub||'')+'</div></div>';
 }
 
-// Request notification permission
-if('Notification' in window&&Notification.permission==='default'){Notification.requestPermission()}
+function statsStrip(items){
+  let h='<div class="stats">';
+  items.forEach(i=>{h+='<div class="st"><div class="st-n '+i.c+'">'+i.v+'</div><div class="st-l">'+i.l+'</div></div>'});
+  return h+'</div>';
+}
 
-// Health check with notifications
-setInterval(async()=>{try{const h=await fetch('/api/health').then(r=>r.json());const s=h.status||'OK';
-const sb=document.getElementById('statusBar');
-sb.className='status-bar '+(s==='OK'?'sb-ok':s==='CRITICAL'?'sb-crit':'sb-warn');
-if(s==='OK')sb.innerHTML='<div class="sb-dot"></div><span class="sb-text" id="sbText">System Online</span>';
-else if(h.alerts&&h.alerts.length){sb.innerHTML='<div class="sb-dot"></div><span class="sb-text">'+h.alerts[0].message+'</span>'}
-// Notify on status change
-if(s!==lastHealthStatus){
-if(s==='CRITICAL')showToast(h.alerts[0].message,'crit',10000);
-else if(s==='WARNING')showToast(h.alerts[0].message,'warn',8000);
-else if(lastHealthStatus!=='OK')showToast('Система восстановлена','ok',4000);
-lastHealthStatus=s}
+function alert_(lv,msg,fixable){
+  const cls=lv==='CRITICAL'?'al-c':lv==='WARNING'?'al-w':'al-ok';
+  let btns='';
+  if(fixable) btns='<div class="acts"><button class="abtn abtn-d" onclick="quick(\'watchdog.heal\')">Починить одной кнопкой</button><button class="abtn abtn-s" onclick="quick(\'watchdog.check\')">Подробнее</button></div>';
+  return '<div class="al '+cls+'"><div class="al-dot"></div><div class="al-txt">'+msg+btns+'</div></div>';
+}
+
+function modGrid(){
+  const mods=[
+    {i:'\u{1F4C2}',n:'Файлы',c:'files.list'},
+    {i:'\u2699',n:'Процессы',c:'processes.list top=5'},
+    {i:'\u{1F310}',n:'Сеть',c:'network.ping host=google.com'},
+    {i:'\u2764',n:'Здоровье',c:'watchdog.check'},
+    {i:'\u{1F4BB}',n:'CPU',c:'system.cpu'},
+    {i:'\u{1F4BF}',n:'Диски',c:'files.disk_usage'},
+    {i:'\u{1F6E1}',n:'Безопасность',c:'scanner.scan'},
+    {i:'\u{1F916}',n:'ИИ',c:'report'}
+  ];
+  let h='<div class="modgrid">';
+  mods.forEach(m=>{h+='<div class="modtile" onclick="quick(\''+m.c+'\')"><span class="modtile-i">'+m.i+'</span><span class="modtile-n">'+m.n+'</span></div>'});
+  return h+'</div>';
+}
+
+/* === DATA RENDERERS === */
+function dig(o){if(!o)return o;if(o.result&&typeof o.result==='object'){if(o.result.result!==undefined)return o.result.result;return o.result}return o}
+
+function rOverview(d){
+  const cp=d.cpu_percent||0,mp=d.memory_used_percent||0,dp=d.disk_used_percent||0;
+  let h='<div class="gc"><div class="gc-title"><span class="gc-icon">\u{1F5A5}</span>System Overview</div>';
+  h+='<div class="kv"><span class="kv-k">OS</span><span class="kv-v">'+d.os+' '+d.machine+'</span></div>';
+  h+='<div class="kv"><span class="kv-k">Host</span><span class="kv-v">'+d.hostname+'</span></div>';
+  h+='<div class="kv"><span class="kv-k">CPU</span><span class="kv-v">'+(d.processor||d.machine)+' ('+d.cpu_cores+' cores)</span></div>';
+  h+='<div class="kv"><span class="kv-k">RAM</span><span class="kv-v '+(mp>90?'cr':mp>75?'cw':'cg')+'">'+mp+'% of '+d.memory_total_gb+' GB</span></div>';
+  h+='<div class="pb"><div class="pb-f" style="width:'+mp+'%;background:'+(mp>90?'var(--red)':mp>75?'var(--amber)':'var(--green)')+'"></div></div>';
+  h+='<div class="kv"><span class="kv-k">Disk</span><span class="kv-v '+(dp>90?'cr':dp>75?'cw':'cc')+'">'+dp+'% of '+d.disk_total_gb+' GB</span></div>';
+  h+='<div class="pb"><div class="pb-f" style="width:'+dp+'%;background:'+(dp>90?'var(--red)':dp>75?'var(--amber)':'var(--cyan)')+'"></div></div>';
+  h+='</div>';
+  // Gauges
+  h+='<div class="gauges" style="margin-top:10px">';
+  h+=gauge(cp,'var(--green)','CPU',d.cpu_cores+' cores');
+  h+=gauge(mp,'var(--accent2)','RAM',d.memory_total_gb+' GB');
+  h+=gauge(dp,'var(--cyan)','Disk',d.disk_total_gb+' GB');
+  h+='</div>';
+  return h;
+}
+
+function rCPU(d){
+  const load=d.LoadPercentage||0;
+  let h='<div class="gc"><div class="gc-title"><span class="gc-icon">\u{1F4BB}</span>CPU</div>';
+  h+='<div class="kv"><span class="kv-k">Processor</span><span class="kv-v">'+(d.Name||'Unknown')+'</span></div>';
+  h+='<div class="kv"><span class="kv-k">Cores / Threads</span><span class="kv-v">'+(d.NumberOfCores||'?')+' / '+(d.NumberOfLogicalProcessors||'?')+'</span></div>';
+  h+='<div class="kv"><span class="kv-k">Load</span><span class="kv-v '+(load>90?'cr':load>60?'cw':'cg')+'">'+load+'%</span></div>';
+  h+='<div class="pb"><div class="pb-f" style="width:'+load+'%;background:'+(load>90?'var(--red)':load>60?'var(--amber)':'var(--green)')+'"></div></div>';
+  if(d.PerCoreLoad&&d.PerCoreLoad.length){
+    h+='<div style="display:flex;gap:4px;margin-top:10px;align-items:flex-end;height:40px">';
+    const mx=Math.max(...d.PerCoreLoad,1);
+    d.PerCoreLoad.forEach((v,i)=>{
+      const pct=Math.max(v,2);
+      const col=v>80?'var(--red)':v>50?'var(--amber)':'var(--green)';
+      h+='<div style="flex:1;background:'+col+';height:'+pct+'%;border-radius:2px 2px 0 0;min-height:2px" title="Core '+i+': '+v+'%"></div>';
+    });
+    h+='</div><div style="font-size:10px;color:var(--t3);margin-top:4px">Per-core load</div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+function rMem(d){
+  const p=d.UsedPercent||0,tot=d.TotalGB?d.TotalGB+' GB':(d.TotalMB||'?')+' MB',fr=d.FreeGB?d.FreeGB+' GB':(d.FreeMB||'?')+' MB';
+  const col=p>90?'var(--red)':p>75?'var(--amber)':'var(--accent2)';
+  return '<div class="gc"><div class="gc-title"><span class="gc-icon">\u{1F4CA}</span>Memory</div><div class="kv"><span class="kv-k">Used</span><span class="kv-v '+(p>90?'cr':p>75?'cw':'ca')+'">'+p+'%</span></div><div class="pb"><div class="pb-f" style="width:'+p+'%;background:'+col+'"></div></div><div class="kv"><span class="kv-k">Total</span><span class="kv-v">'+tot+'</span></div><div class="kv"><span class="kv-k">Free</span><span class="kv-v">'+fr+'</span></div>'+(d.SwapTotalGB?'<div class="kv"><span class="kv-k">Swap</span><span class="kv-v">'+d.SwapUsedPercent+'% of '+d.SwapTotalGB+' GB</span></div>':'')+'</div>';
+}
+
+function rDisk(items){
+  // Filter out Docker internal mounts
+  const real=items.filter(d=>{
+    const m=d.drive||d.mountpoint||'';
+    return m==='/'||m.startsWith('/home')||m.startsWith('/mnt')||m.startsWith('/media')||/^[A-Z]:/.test(m);
+  });
+  const show=real.length?real:items.slice(0,2);
+  let h='';
+  show.forEach(d=>{
+    const p=d.percent||d.used_percent||0,col=p>90?'var(--red)':p>75?'var(--amber)':'var(--cyan)';
+    h+='<div class="gc" style="margin-top:6px"><div class="gc-title"><span class="gc-icon">\u{1F4BF}</span>'+(d.drive||d.mountpoint||'Disk')+'</div><div class="kv"><span class="kv-k">Used</span><span class="kv-v '+(p>90?'cr':p>75?'cw':'cc')+'">'+p+'%</span></div><div class="pb"><div class="pb-f" style="width:'+p+'%;background:'+col+'"></div></div><div class="kv"><span class="kv-k">Free</span><span class="kv-v">'+(d.free_gb||'?')+' GB</span></div></div>';
+  });
+  return h;
+}
+
+function rHealth(d){
+  const alerts=d.alerts||[];
+  // Update background
+  const s=d.status||'OK';
+  updateBg(s);
+  if(!alerts.length) return alert_('OK','System OK');
+  let h='';alerts.forEach(a=>{h+=alert_(a.level,a.message,a.level==='CRITICAL')});
+  return h;
+}
+
+function rProc(items){
+  let h='<div class="gc"><div class="gc-title"><span class="gc-icon">\u2699</span>Processes</div><table class="ptbl"><tr><th>Name</th><th>PID</th><th>RAM</th><th>CPU</th></tr>';
+  (Array.isArray(items)?items:[]).slice(0,8).forEach(p=>{h+='<tr><td>'+p.Name+'</td><td>'+p.Id+'</td><td>'+p.MemMB+' MB</td><td>'+(p.CPU_s||'-')+'s</td></tr>'});
+  return h+'</table></div>';
+}
+
+function tryCard(d){
+  if(!d) return null;
+  // System overview (has os + cpu_cores + memory_total_gb)
+  if(d.os&&d.cpu_cores&&d.memory_total_gb) return rOverview(d);
+  // CPU info (has NumberOfCores + LoadPercentage)
+  if(d.NumberOfCores&&d.LoadPercentage!==undefined) return rCPU(d);
+  // Memory (has UsedPercent + TotalGB/TotalMB)
+  if(d.UsedPercent!==undefined&&(d.TotalGB||d.TotalMB)) return rMem(d);
+  // Disk array
+  if(Array.isArray(d)&&d[0]&&(d[0].drive||d[0].percent!==undefined||d[0].mountpoint)) return rDisk(d);
+  // Health check
+  if(d.checks&&d.alerts!==undefined) return rHealth(d);
+  // Process list
+  if(Array.isArray(d)&&d[0]&&d[0].Name&&d[0].Id) return rProc(d);
+  // Network interfaces
+  if(Array.isArray(d)&&d[0]&&d[0].interface) return rNet(d);
+  // Platform detect
+  if(d.current_stack&&d.available_commands) return rPlatform(d);
+  return null;
+}
+
+function rNet(items){
+  let h='<div class="gc"><div class="gc-title"><span class="gc-icon">\u{1F310}</span>Network</div>';
+  items.forEach(i=>{h+='<div class="kv"><span class="kv-k">'+(i.interface||i.name)+'</span><span class="kv-v">'+(i.ip||'—')+'</span></div>'});
+  return h+'</div>';
+}
+
+function rPlatform(d){
+  let h='<div class="gc"><div class="gc-title"><span class="gc-icon">\u{1F5A5}</span>Platform</div>';
+  h+='<div class="kv"><span class="kv-k">OS</span><span class="kv-v">'+d.os+' '+d.release+'</span></div>';
+  h+='<div class="kv"><span class="kv-k">Arch</span><span class="kv-v">'+d.machine+'</span></div>';
+  h+='<div class="kv"><span class="kv-k">Stack</span><span class="kv-v">'+d.current_stack+'</span></div>';
+  h+='<div class="kv"><span class="kv-k">Python</span><span class="kv-v">'+d.python+'</span></div>';
+  if(d.installed_tools){const t=Object.entries(d.installed_tools);if(t.length){h+='<div style="margin-top:8px;font-size:11px;color:var(--t3)">Tools: '+t.map(x=>x[0]).join(', ')+'</div>'}}
+  return h+'</div>';
+}
+
+function fmtResult(data){
+  const el=document.createElement('div');
+  if(data.result&&data.result.comment){
+    el.innerHTML='<div style="margin-bottom:8px">'+data.result.comment+'</div>';
+    if(data.result.results){data.result.results.forEach(r=>{
+      const inner=dig(r.result);const card=tryCard(inner);
+      if(card) el.innerHTML+=card;
+      else if(inner){const c=document.createElement('div');c.className='cblk';c.textContent=typeof inner==='string'?inner:JSON.stringify(inner,null,2);el.appendChild(c)}
+    })}
+    return el;
+  }
+  if(data.result&&typeof data.result==='string') return data.result;
+  if(data.result){
+    const inner=dig(data.result);const card=tryCard(inner);
+    if(card){el.innerHTML=card;return el}
+    const c=document.createElement('div');c.className='cblk';c.textContent=typeof inner==='string'?inner:JSON.stringify(inner,null,2);el.appendChild(c);return el;
+  }
+  return JSON.stringify(data,null,2);
+}
+
+/* === STATUS === */
+let lastSt='OK';
+function updateBg(s){
+  document.body.style.background=s==='CRITICAL'?'var(--bg-c)':s==='WARNING'?'var(--bg-w)':'var(--bg)';
+  const d=document.getElementById('sd');d.className='sdot'+(s==='CRITICAL'?' c':s==='WARNING'?' w':'');
+  document.getElementById('sCtx').textContent=s==='OK'?'AI-OS':s==='CRITICAL'?'AI-OS \u2022 CRITICAL':'AI-OS \u2022 Warning';
+}
+
+/* === INIT === */
+async function init(){
+  try{
+    const [health,stats,models,kb]=await Promise.all([
+      fetch('/api/health').then(r=>r.json()),
+      fetch('/api/stats').then(r=>r.json()),
+      fetch('/api/models').then(r=>r.json()),
+      fetch('/api/knowledge').then(r=>r.json())
+    ]);
+    const s=health.status||'OK';updateBg(s);lastSt=s;
+
+    const w=document.createElement('div');
+    let h='<div style="margin-bottom:14px"><span style="font-size:20px;font-weight:700">AI-OS</span><br><span style="color:var(--t2);font-size:15px">Intelligent Operating System</span></div>';
+
+    // Stats strip
+    h+=statsStrip([
+      {v:stats.modules.running+'/'+stats.modules.total,l:'Modules',c:'cg'},
+      {v:stats.brain.skills,l:'Skills',c:'ca'},
+      {v:stats.knowledge.entries,l:'Knowledge',c:'cc'},
+      {v:stats.trainer.commands_observed,l:'Commands',c:'cp'}
+    ]);
+
+    // Model
+    const prov=models.provider==='openrouter'?'OpenRouter':'Anthropic';
+    const mod=(models.openrouter_models&&models.openrouter_models.fast)||models.default_model||'—';
+    h+='<div class="mbadge">'+prov+' \u2022 '+mod+'</div>';
+
+    // Knowledge summary
+    const kbk=Object.keys(kb);
+    if(kbk.length){let te=0,ts=0;kbk.forEach(k=>{te+=kb[k].entries||0;ts+=kb[k].solutions||0});
+    h+='<div style="margin-top:8px;font-size:13px;color:var(--t3)">'+kbk.length+' knowledge domains \u2022 '+te+' entries \u2022 '+ts+' solutions</div>'}
+
+    // Health
+    if(health.alerts&&health.alerts.length){health.alerts.forEach(a=>{h+=alert_(a.level,a.message,a.level==='CRITICAL')})}
+    else{h+=alert_('OK','System healthy')}
+
+    // Module grid
+    h+=modGrid();
+
+    // Quick chips
+    h+='<div class="chips"><span class="chip" onclick="quick(\'как дела у системы?\')">Status</span><span class="chip" onclick="quick(\'покажи процессы\')">Processes</span><span class="chip" onclick="quick(\'что с памятью?\')">Memory</span><span class="chip" onclick="quick(\'сколько места?\')">Disks</span><span class="chip" onclick="quick(\'проверь сеть\')">Network</span></div>';
+
+    w.innerHTML=h;add(w,'a');
+  }catch(e){add('Starting up...','a')}
+  I.focus();
+}
+
+/* === SEND === */
+async function send(){
+  const t=I.value.trim();if(!t)return;I.value='';add(t,'u');showTyp();
+  try{
+    const r=await fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:t})});
+    const d=await r.json();hideTyp();add(fmtResult(d),'a');
+  }catch(e){hideTyp();add('<span style="color:var(--red)">Error: '+e.message+'</span>','a')}
+}
+function quick(t){I.value=t;send()}
+
+/* === UPLOAD === */
+async function upFile(inp){
+  if(!inp.files||!inp.files[0])return;const f=inp.files[0];
+  add('\u{1F4CE} '+f.name+' ('+Math.round(f.size/1024)+' KB)','u');showTyp();
+  const fd=new FormData();fd.append('file',f);
+  try{
+    const r=await fetch('/api/upload',{method:'POST',body:fd});const d=await r.json();hideTyp();
+    let h='<div class="fcard"><div class="fcard-icon">\u{1F4C4}</div><div class="fcard-info"><div class="fcard-name">'+d.filename+'</div><div class="fcard-size">'+Math.round(d.size/1024)+' KB</div></div></div>';
+    if(d.ai_response&&typeof d.ai_response==='string') h+='<div style="margin-top:10px">'+d.ai_response+'</div>';
+    add(h,'a');
+  }catch(e){hideTyp();add('Upload error: '+e.message,'a')}
+  inp.value='';
+}
+
+/* === HEALTH POLLING === */
+setInterval(async()=>{try{
+  const h=await fetch('/api/health').then(r=>r.json());const s=h.status||'OK';updateBg(s);
+  if(s!==lastSt){
+    if(s==='CRITICAL'){toast(h.alerts[0].message,'c',10000);const el=document.createElement('div');el.innerHTML=alert_('CRITICAL',h.alerts[0].message,true);add(el,'a')}
+    else if(s==='WARNING'){toast(h.alerts[0].message,'w',8000)}
+    else if(lastSt!=='OK'){toast('System recovered','ok',4000)}
+    lastSt=s;
+  }
 }catch(e){}},30000);
 
-// === VOICE INPUT (Web Speech API) ===
-let recognition=null;
-let isRecording=false;
+/* === TOAST === */
+function toast(msg,lv='ok',dur=5000){
+  const tc=document.getElementById('toasts'),t=document.createElement('div');
+  t.className='toast toast-'+lv;t.innerHTML=msg+'<span style="margin-left:auto;opacity:.5;cursor:pointer" onclick="this.parentElement.remove()">\u2715</span>';
+  tc.appendChild(t);setTimeout(()=>{if(t.parentElement){t.style.opacity='0';setTimeout(()=>t.remove(),300)}},dur);
+  if('Notification' in window&&Notification.permission==='granted'&&lv!=='ok'){new Notification('AI-OS',{body:msg})}
+}
+if('Notification' in window&&Notification.permission==='default'){Notification.requestPermission()}
 
-function toggleMic(){
-if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){
-showToast('Голосовой ввод не поддерживается в этом браузере. Используй Chrome.','warn');return}
-if(isRecording){stopMic();return}
-const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-recognition=new SR();
-recognition.lang='ru-RU';
-recognition.interimResults=true;
-recognition.continuous=false;
-recognition.maxAlternatives=1;
-const btn=document.getElementById('micBtn');
-btn.classList.add('recording');
-isRecording=true;
-let finalText='';
-recognition.onresult=(e)=>{
-let interim='';
-for(let i=e.resultIndex;i<e.results.length;i++){
-if(e.results[i].isFinal)finalText+=e.results[i][0].transcript;
-else interim+=e.results[i][0].transcript}
-I.value=finalText+interim};
-recognition.onend=()=>{
-btn.classList.remove('recording');isRecording=false;
-if(finalText.trim()){I.value=finalText.trim();send()}};
-recognition.onerror=(e)=>{
-btn.classList.remove('recording');isRecording=false;
-if(e.error!=='no-speech')showToast('Ошибка микрофона: '+e.error,'warn')};
-recognition.start();
-showToast('Слушаю... Говори команду','ok',3000)}
+/* === VOICE === */
+let rec=null,isR=false;
+function togMic(){
+  if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){toast('Voice requires Chrome','w');return}
+  if(isR){if(rec)rec.stop();document.getElementById('mic').classList.remove('rec');isR=false;return}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;rec=new SR();rec.lang='ru-RU';rec.interimResults=true;rec.continuous=false;
+  document.getElementById('mic').classList.add('rec');isR=true;let fin='';
+  rec.onresult=e=>{let tmp='';for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)fin+=e.results[i][0].transcript;else tmp+=e.results[i][0].transcript}I.value=fin+tmp};
+  rec.onend=()=>{document.getElementById('mic').classList.remove('rec');isR=false;if(fin.trim()){I.value=fin.trim();send()}};
+  rec.onerror=e=>{document.getElementById('mic').classList.remove('rec');isR=false;if(e.error!=='no-speech')toast('Mic: '+e.error,'w')};
+  rec.start();toast('Слушаю...','ok',3000);
+}
 
-function stopMic(){
-if(recognition){recognition.stop()}
-document.getElementById('micBtn').classList.remove('recording');
-isRecording=false}
+init();
 </script>
-</body>
-</html>"""
-
-
-if __name__ == "__main__":
-    import uvicorn
-    print("  AI-OS | http://localhost:8080")
-    uvicorn.run(app, host="127.0.0.1", port=8080, log_level="warning")
+</body></html>"""
