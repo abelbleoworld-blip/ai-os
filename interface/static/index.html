@@ -674,6 +674,141 @@
       box-shadow: 0 1px 6px rgba(0,0,0,0.08);
     }
     .suggestion-chip:hover { background: rgba(255,255,255,0.90); border-color: rgba(255,255,255,1.0); color: var(--text); transform: translateY(-1px); box-shadow: 0 3px 12px rgba(0,0,0,0.12); }
+
+    /* ─── Theme toggle button ─── */
+    #theme-toggle {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-dim);
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    #theme-toggle:hover { background: var(--glass-hover); color: var(--text); }
+    #theme-toggle .icon { font-size: 14px; }
+
+    /* ─── Dark theme ─── */
+    [data-theme="dark"] {
+      --bg:           #0A0A0A;
+      --glass:        rgba(255,255,255,0.06);
+      --glass-hover:  rgba(255,255,255,0.10);
+      --border:       rgba(255,255,255,0.08);
+      --border-hover: rgba(255,255,255,0.16);
+      --text:         #F5F5F5;
+      --text-dim:     #9A9A9A;
+      --accent:       #818CF8;
+      --accent-dim:   rgba(129,140,248,0.15);
+      --accent-glow:  rgba(129,140,248,0.30);
+      --green:        #22C55E;
+      --green-dim:    rgba(34,197,94,0.15);
+      --amber:        #F59E0B;
+      --amber-dim:    rgba(245,158,11,0.15);
+      --red:          #EF4444;
+      --red-dim:      rgba(239,68,68,0.15);
+    }
+    [data-theme="dark"] body,
+    [data-theme="dark"] html {
+      background: linear-gradient(135deg, #0A0A0A 0%, #111111 25%, #0d0d0d 50%, #0f0f0f 75%, #0A0A0A 100%);
+    }
+    [data-theme="dark"] #topbar {
+      background: rgba(10,10,10,0.80);
+      border-bottom-color: rgba(255,255,255,0.06);
+    }
+    [data-theme="dark"] #modules-bar {
+      background: rgba(10,10,10,0.80);
+      border-top-color: rgba(255,255,255,0.06);
+    }
+    [data-theme="dark"] #input-bar {
+      background: rgba(10,10,10,0.80);
+      border-top-color: rgba(255,255,255,0.06);
+    }
+    [data-theme="dark"] #input-inner {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.08);
+      color: #F5F5F5;
+    }
+    [data-theme="dark"] #input-inner:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+    [data-theme="dark"] textarea {
+      color: #F5F5F5;
+    }
+    [data-theme="dark"] textarea::placeholder {
+      color: #666;
+    }
+    [data-theme="dark"] .msg.user .msg-bubble {
+      background: var(--accent);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 2px 12px rgba(99,102,241,0.25);
+    }
+    [data-theme="dark"] .msg.ai .msg-bubble {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.08);
+      color: #F5F5F5;
+    }
+    [data-theme="dark"] .msg.system .msg-bubble {
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(255,255,255,0.06);
+      color: #9A9A9A;
+    }
+    [data-theme="dark"] .module-card {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.08);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    [data-theme="dark"] .module-card:hover {
+      background: rgba(255,255,255,0.09);
+      border-color: rgba(255,255,255,0.14);
+    }
+    [data-theme="dark"] .typing-bubble {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.08);
+    }
+    [data-theme="dark"] .typing-dot { background: #666; }
+    [data-theme="dark"] .suggestion-chip {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.10);
+      color: #9A9A9A;
+    }
+    [data-theme="dark"] .suggestion-chip:hover {
+      background: rgba(255,255,255,0.12);
+      border-color: rgba(255,255,255,0.18);
+      color: #F5F5F5;
+    }
+    [data-theme="dark"] .ai-text code {
+      background: rgba(255,255,255,0.08);
+      color: #e0e0e0;
+    }
+    [data-theme="dark"] .ai-text pre {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.08);
+    }
+    [data-theme="dark"] .data-card {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.08);
+    }
+    [data-theme="dark"] .toast {
+      background: rgba(30,30,30,0.95);
+      color: #F5F5F5;
+      border-color: rgba(255,255,255,0.1);
+    }
+    [data-theme="dark"] .state-pill.ok { background: linear-gradient(135deg, #166534, #22C55E); color: #fff; }
+    [data-theme="dark"] .state-pill.warn { background: linear-gradient(135deg, #92400E, #F59E0B); color: #fff; }
+    [data-theme="dark"] .state-pill.crit { background: linear-gradient(135deg, #991B1B, #EF4444); color: #fff; }
+    [data-theme="dark"] .usage-bar { background: rgba(255,255,255,0.08); }
+    [data-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+    [data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
+    [data-theme="dark"] #drop-overlay { background: rgba(0,0,0,0.85); color: #F5F5F5; }
   </style>
 </head>
 <body>
@@ -704,6 +839,10 @@
         <div class="dot dim" id="dot-red" title="Критично"></div>
       </div>
       <div id="ws-status" title="WebSocket"></div>
+      <button id="theme-toggle" onclick="cycleTheme()" title="Переключить тему">
+        <span class="icon" id="theme-icon">☀️</span>
+        <span id="theme-label">Светлая</span>
+      </button>
     </div>
   </header>
 
@@ -827,6 +966,50 @@
 <div id="toast-container"></div>
 
 <script>
+/* ────────────────────────────────────────────────
+   Theme: auto / light / dark
+──────────────────────────────────────────────── */
+const THEMES = ['auto', 'light', 'dark'];
+const THEME_META = {
+  auto:  { icon: '🔄', label: 'Авто' },
+  light: { icon: '☀️', label: 'Светлая' },
+  dark:  { icon: '🌙', label: 'Тёмная' }
+};
+
+function getSystemTheme() {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyTheme(mode) {
+  const resolved = mode === 'auto' ? getSystemTheme() : mode;
+  document.documentElement.setAttribute('data-theme', resolved);
+  const m = THEME_META[mode];
+  const iconEl = document.getElementById('theme-icon');
+  const labelEl = document.getElementById('theme-label');
+  if (iconEl) iconEl.textContent = m.icon;
+  if (labelEl) labelEl.textContent = m.label;
+}
+
+function cycleTheme() {
+  const current = localStorage.getItem('aios-theme') || 'auto';
+  const idx = THEMES.indexOf(current);
+  const next = THEMES[(idx + 1) % THEMES.length];
+  localStorage.setItem('aios-theme', next);
+  applyTheme(next);
+}
+
+// Init theme immediately
+(function() {
+  const saved = localStorage.getItem('aios-theme') || 'auto';
+  applyTheme(saved);
+  // Listen for system theme changes (for auto mode)
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if ((localStorage.getItem('aios-theme') || 'auto') === 'auto') {
+      applyTheme('auto');
+    }
+  });
+})();
+
 /* ────────────────────────────────────────────────
    State
 ──────────────────────────────────────────────── */
