@@ -108,7 +108,13 @@ class ClaudeBrain:
 {{"actions": [{{"module": "system", "command": "overview"}}, {{"module": "system", "command": "cpu"}}, {{"module": "system", "command": "memory"}}, {{"module": "system", "command": "disk"}}, {{"module": "watchdog", "command": "check"}}], "comment": "Запускаю полную диагностику: процессор, память, диски и общее здоровье системы"}}
 
 Пользователь: "на каком компе ты работаешь?"
-{{"actions": [{{"module": "system", "command": "overview"}}], "comment": "Сейчас покажу на чём я работаю — ОС, процессор, память, всё расскажу"}}"""
+{{"actions": [{{"module": "system", "command": "overview"}}], "comment": "Сейчас покажу на чём я работаю — ОС, процессор, память, всё расскажу"}}
+
+Пользователь: "диски" / "место на диске" / "что занимает место"
+{{"actions": [{{"module": "utils", "command": "diskmap", "args": {{"path": "/"}}}}], "comment": "Покажу карту диска — что сколько весит, как в DaisyDisk"}}
+
+Пользователь: "покажи файлы" / "что в папке"
+{{"actions": [{{"module": "utils", "command": "tree", "args": {{"path": "/app", "depth": "2"}}}}], "comment": "Показываю дерево файлов"}}"""
 
     async def process(self, user_input: str):
         """Главная функция — человек говорит, Claude думает, модули делают"""

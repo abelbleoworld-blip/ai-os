@@ -630,7 +630,17 @@ function runUtil(cmd){
 }
 
 /* === DATA RENDERERS === */
-function dig(o){if(!o)return o;if(o.result&&typeof o.result==='object'){if(o.result.result!==undefined)return o.result.result;return o.result}return o}
+function dig(o){
+  if(!o)return o;
+  // Unwrap nested {result:{ok:true,result:{...}}} and {timestamp,target,result:{...}}
+  let r=o;
+  for(let i=0;i<4;i++){
+    if(r&&typeof r==='object'&&r.result!==undefined&&typeof r.result==='object'){
+      r=r.result;
+    } else break;
+  }
+  return r;
+}
 
 function rOverview(d){
   const cp=d.cpu_percent||0,mp=d.memory_used_percent||0,dp=d.disk_used_percent||0;
