@@ -66,7 +66,11 @@ class ClaudeBrain:
         for name, module in self.bus.modules.items():
             if hasattr(module, 'kb') and module.kb.solutions:
                 for problem, sol in module.kb.solutions.items():
-                    knowledge_summary.append(f"  [{name}] {problem}: {sol['solution'][:100]}...")
+                    try:
+                        sol_text = sol['solution'] if isinstance(sol, dict) else str(sol)
+                        knowledge_summary.append(f"  [{name}] {problem}: {sol_text[:100]}...")
+                    except:
+                        pass
 
         knowledge_text = "\n".join(knowledge_summary[:20]) if knowledge_summary else "  Пока пусто"
 
@@ -142,9 +146,15 @@ class ClaudeBrain:
                 # Claude хочет вызвать модули
                 results = []
                 for action in actions_result["actions"]:
-                    module = action["module"]
-                    command = action["command"]
+                    if not isinstance(action, dict):
+                        continue
+                    module = action.get("module", "")
+                    command = action.get("command", "")
+                    if not module or not command:
+                        continue
                     args = action.get("args", {})
+                    if not isinstance(args, dict):
+                        args = {}
                     r = await self.bus.send(module, command, **args)
                     results.append({"module": module, "command": command, "result": r})
 
@@ -178,6 +188,8 @@ class ClaudeBrain:
                 return response
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             # Claude недоступен — fallback на старый мозг
             error_msg = str(e)
             if "rate_limit" in error_msg.lower() or "credit" in error_msg.lower():
@@ -241,7 +253,10 @@ class ClaudeBrain:
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
-                return data["choices"][0]["message"]["content"]
+                try:
+                    return data["choices"][0]["message"]["content"]
+                except (KeyError, IndexError, TypeError):
+                    raise Exception(f"Unexpected response: {json.dumps(data)[:300]}")
         except urllib.error.HTTPError as e:
             body = e.read().decode("utf-8", errors="replace")
             raise Exception(f"OpenRouter {e.code}: {body}")
