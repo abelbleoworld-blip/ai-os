@@ -690,6 +690,65 @@ function utilsPanel(){
   return h;
 }
 
+function appsPanel(){
+  const apps=[
+    {name:'Yandex Alice',icon:'\u{1F3A4}',cls:'folder-ai',tools:[
+      {i:'\u{1F3A4}',n:'Status',c:'alice.status'},
+      {i:'\u{1F4CA}',n:'Stats',c:'alice.stats'},
+    ]},
+    {name:'Yandex Disk',icon:'\u2601',cls:'folder-tools',tools:[
+      {i:'\u2601',n:'Status',c:'yadisk.status'},
+      {i:'\u{1F4C1}',n:'Files',c:'yadisk.ls'},
+      {i:'\u2B06',n:'Sync KB',c:'yadisk.sync_knowledge'},
+      {i:'\u{1F4BE}',n:'Backup',c:'yadisk.backup'},
+      {i:'\u{1F504}',n:'Restore',c:'yadisk.restore'},
+    ]},
+    {name:'Mesh Network',icon:'\u{1F517}',cls:'folder-terminal',tools:[
+      {i:'\u{1F5A5}',n:'Nodes',c:'mesh.nodes'},
+      {i:'\u{1F4E1}',n:'Status',c:'mesh.status'},
+      {i:'\u{1F3D3}',n:'Ping',c:'mesh.ping_nodes'},
+    ]},
+    {name:'Designer',icon:'\u{1F3A8}',cls:'folder-design',tools:[
+      {i:'\u{1F3A8}',n:'Palette',c:'designer.palette'},
+      {i:'\u{1F308}',n:'Colors',c:'designer.colors'},
+      {i:'\u{1F4D0}',n:'Layout',c:'ask:Describe layout|designer.layout description=$'},
+      {i:'\u{1F5BC}',n:'Generate',c:'ask:Describe page|designer.generate description=$'},
+    ]},
+    {name:'Knowledge',icon:'\u{1F4DA}',cls:'folder-ai',tools:[
+      {i:'\u{1F4DA}',n:'Stats',c:'ingest.stats'},
+      {i:'\u{1F4E5}',n:'Ingest',c:'ask:Path|ingest.scan path=$'},
+      {i:'\u{1F50D}',n:'Search',c:'ask:Query|ingest.search query=$'},
+      {i:'\u{1F5D1}',n:'Domains',c:'ingest.domains'},
+    ]},
+    {name:'Scheduler',icon:'\u23F0',cls:'folder-text',tools:[
+      {i:'\u23F0',n:'Tasks',c:'scheduler.list'},
+      {i:'\u2795',n:'Add',c:'ask:Task command|ask:Interval (min)|scheduler.add command=$ interval=$'},
+    ]},
+    {name:'Software',icon:'\u{1F4E6}',cls:'folder-system',tools:[
+      {i:'\u{1F4E6}',n:'Installed',c:'software.list'},
+      {i:'\u{1F50D}',n:'Search',c:'ask:Package name|software.search name=$'},
+      {i:'\u2B07',n:'Install',c:'ask:Package|software.install name=$'},
+    ]},
+  ];
+  let h='';
+  apps.forEach((cat,ci)=>{
+    const fid='app_'+ci;
+    h+='<div class="ucat">';
+    h+='<div class="ucat-header" onclick="togFolder(\''+fid+'\')">';
+    h+='<div class="ucat-icon '+cat.cls+'">'+cat.icon+'</div>';
+    h+='<div class="ucat-info"><div class="ucat-name">'+cat.name+'</div><div class="ucat-count">'+cat.tools.length+' tools</div></div>';
+    h+='<span class="ucat-arrow" id="arr_'+fid+'">\u25B6</span>';
+    h+='</div>';
+    h+='<div class="ucat-grid" id="'+fid+'">';
+    cat.tools.forEach(t=>{
+      h+='<div class="utile" onclick="event.stopPropagation();runUtil(\''+t.c.replace(/'/g,"\\'")+'\')">';
+      h+='<span class="utile-i">'+t.i+'</span><span class="utile-n">'+t.n+'</span></div>';
+    });
+    h+='</div></div>';
+  });
+  return h;
+}
+
 function togFolder(id){
   const g=document.getElementById(id);
   const a=document.getElementById('arr_'+id);
@@ -1210,12 +1269,18 @@ async function init(){
     if(health.alerts&&health.alerts.length){health.alerts.forEach(a=>{h+=alert_(a.level,a.message,a.level==='CRITICAL')})}
     else{h+=alert_('OK','System healthy')}
 
-    // Health alert
+    // Utilities + Apps folders
+    h+='<div style="margin-top:14px;font-size:12px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:8px">\u{1F9F0} Utilities</div>';
+    h+=utilsPanel();
+
+    h+='<div style="margin-top:14px;font-size:12px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:8px">\u{1F4E6} Apps</div>';
+    h+=appsPanel();
+
     // Quick chips
-    h+='<div class="chips"><span class="chip" onclick="quick(\'проверь систему\')">System</span><span class="chip" onclick="quick(\'покажи процессы\')">Processes</span><span class="chip" onclick="quick(\'что с памятью?\')">Memory</span><span class="chip" onclick="quick(\'сколько места?\')">Disks</span><span class="chip" onclick="quick(\'mesh.nodes\')">Mesh</span></div>';
+    h+='<div class="chips" style="margin-top:14px"><span class="chip" onclick="quick(\'проверь систему\')">System</span><span class="chip" onclick="quick(\'покажи процессы\')">Processes</span><span class="chip" onclick="quick(\'что с памятью?\')">Memory</span><span class="chip" onclick="quick(\'сколько места?\')">Disks</span><span class="chip" onclick="quick(\'mesh.nodes\')">Mesh</span></div>';
 
     // Philosophy
-    h+='<div class="philo"><div class="philo-title">Philosophy</div><div class="philo-text">AI-OS \u2014 this is not an interface, it\'s just a conversation. You speak \u2014 the system acts. Everything else happens on its own.</div></div>';
+    h+='<div class="philo"><div class="philo-title">Philosophy</div><div class="philo-text">AI-OS \u2014 \u044d\u0442\u043e \u043d\u0435 \u0438\u043d\u0442\u0435\u0440\u0444\u0435\u0439\u0441, \u044d\u0442\u043e \u043f\u0440\u043e\u0441\u0442\u043e \u0440\u0430\u0437\u0433\u043e\u0432\u043e\u0440. \u0422\u044b \u0433\u043e\u0432\u043e\u0440\u0438\u0448\u044c \u2014 \u0441\u0438\u0441\u0442\u0435\u043c\u0430 \u0434\u0435\u043b\u0430\u0435\u0442. \u0412\u0441\u0451 \u043e\u0441\u0442\u0430\u043b\u044c\u043d\u043e\u0435 \u043f\u0440\u043e\u0438\u0441\u0445\u043e\u0434\u0438\u0442 \u0441\u0430\u043c\u043e.</div></div>';
 
     w.innerHTML=h;add(w,'a');
     // Also populate the input-area panel
