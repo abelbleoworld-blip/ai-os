@@ -102,7 +102,11 @@ class WatchdogModule(SystemModule):
 
     async def _check_disks(self):
         results = []
+        seen = set()
         for p in psutil.disk_partitions():
+            # Skip Docker internal mounts
+            if p.mountpoint in ('/etc/resolv.conf', '/etc/hostname', '/etc/hosts'):
+                continue
             try:
                 usage = psutil.disk_usage(p.mountpoint)
                 pct = usage.percent

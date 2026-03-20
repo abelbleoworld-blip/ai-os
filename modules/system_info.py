@@ -67,18 +67,26 @@ class SystemInfoModule(SystemModule):
     async def cmd_disk(self):
         partitions = psutil.disk_partitions()
         result = []
+        seen = set()
         for p in partitions:
+            # Skip Docker internal mounts
+            if p.mountpoint in ('/etc/resolv.conf', '/etc/hostname', '/etc/hosts'):
+                continue
             try:
                 usage = psutil.disk_usage(p.mountpoint)
-                result.append({
-                    "drive": p.mountpoint,
-                    "mountpoint": p.mountpoint,
-                    "fstype": p.fstype,
-                    "total_gb": round(usage.total / (1024**3), 1),
-                    "used_gb": round(usage.used / (1024**3), 1),
-                    "free_gb": round(usage.free / (1024**3), 1),
-                    "percent": usage.percent,
-                })
+                # Deduplicate by total size (Docker volumes share same FS)
+                key = (usage.total, usage.free)
+                if key not in seen:
+                    seen.add(key)
+                    result.append({
+                        "drive": p.mountpoint,
+                        "mountpoint": p.mountpoint,
+                        "fstype": p.fstype,
+                        "total_gb": round(usage.total / (1024**3), 1),
+                        "used_gb": round(usage.used / (1024**3), 1),
+                        "free_gb": round(usage.free / (1024**3), 1),
+                        "percent": usage.percent,
+                    })
             except (PermissionError, OSError):
                 pass
         return result

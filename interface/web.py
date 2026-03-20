@@ -429,17 +429,64 @@ function modGrid(){
 /* === DATA RENDERERS === */
 function dig(o){if(!o)return o;if(o.result&&typeof o.result==='object'){if(o.result.result!==undefined)return o.result.result;return o.result}return o}
 
+function rOverview(d){
+  const cp=d.cpu_percent||0,mp=d.memory_used_percent||0,dp=d.disk_used_percent||0;
+  let h='<div class="gc"><div class="gc-title"><span class="gc-icon">\u{1F5A5}</span>System Overview</div>';
+  h+='<div class="kv"><span class="kv-k">OS</span><span class="kv-v">'+d.os+' '+d.machine+'</span></div>';
+  h+='<div class="kv"><span class="kv-k">Host</span><span class="kv-v">'+d.hostname+'</span></div>';
+  h+='<div class="kv"><span class="kv-k">CPU</span><span class="kv-v">'+(d.processor||d.machine)+' ('+d.cpu_cores+' cores)</span></div>';
+  h+='<div class="kv"><span class="kv-k">RAM</span><span class="kv-v '+(mp>90?'cr':mp>75?'cw':'cg')+'">'+mp+'% of '+d.memory_total_gb+' GB</span></div>';
+  h+='<div class="pb"><div class="pb-f" style="width:'+mp+'%;background:'+(mp>90?'var(--red)':mp>75?'var(--amber)':'var(--green)')+'"></div></div>';
+  h+='<div class="kv"><span class="kv-k">Disk</span><span class="kv-v '+(dp>90?'cr':dp>75?'cw':'cc')+'">'+dp+'% of '+d.disk_total_gb+' GB</span></div>';
+  h+='<div class="pb"><div class="pb-f" style="width:'+dp+'%;background:'+(dp>90?'var(--red)':dp>75?'var(--amber)':'var(--cyan)')+'"></div></div>';
+  h+='</div>';
+  // Gauges
+  h+='<div class="gauges" style="margin-top:10px">';
+  h+=gauge(cp,'var(--green)','CPU',d.cpu_cores+' cores');
+  h+=gauge(mp,'var(--accent2)','RAM',d.memory_total_gb+' GB');
+  h+=gauge(dp,'var(--cyan)','Disk',d.disk_total_gb+' GB');
+  h+='</div>';
+  return h;
+}
+
+function rCPU(d){
+  const load=d.LoadPercentage||0;
+  let h='<div class="gc"><div class="gc-title"><span class="gc-icon">\u{1F4BB}</span>CPU</div>';
+  h+='<div class="kv"><span class="kv-k">Processor</span><span class="kv-v">'+(d.Name||'Unknown')+'</span></div>';
+  h+='<div class="kv"><span class="kv-k">Cores / Threads</span><span class="kv-v">'+(d.NumberOfCores||'?')+' / '+(d.NumberOfLogicalProcessors||'?')+'</span></div>';
+  h+='<div class="kv"><span class="kv-k">Load</span><span class="kv-v '+(load>90?'cr':load>60?'cw':'cg')+'">'+load+'%</span></div>';
+  h+='<div class="pb"><div class="pb-f" style="width:'+load+'%;background:'+(load>90?'var(--red)':load>60?'var(--amber)':'var(--green)')+'"></div></div>';
+  if(d.PerCoreLoad&&d.PerCoreLoad.length){
+    h+='<div style="display:flex;gap:4px;margin-top:10px;align-items:flex-end;height:40px">';
+    const mx=Math.max(...d.PerCoreLoad,1);
+    d.PerCoreLoad.forEach((v,i)=>{
+      const pct=Math.max(v,2);
+      const col=v>80?'var(--red)':v>50?'var(--amber)':'var(--green)';
+      h+='<div style="flex:1;background:'+col+';height:'+pct+'%;border-radius:2px 2px 0 0;min-height:2px" title="Core '+i+': '+v+'%"></div>';
+    });
+    h+='</div><div style="font-size:10px;color:var(--t3);margin-top:4px">Per-core load</div>';
+  }
+  h+='</div>';
+  return h;
+}
+
 function rMem(d){
   const p=d.UsedPercent||0,tot=d.TotalGB?d.TotalGB+' GB':(d.TotalMB||'?')+' MB',fr=d.FreeGB?d.FreeGB+' GB':(d.FreeMB||'?')+' MB';
   const col=p>90?'var(--red)':p>75?'var(--amber)':'var(--accent2)';
-  return '<div class="gc"><div class="gc-title"><span class="gc-icon">\u{1F4CA}</span>Memory</div><div class="kv"><span class="kv-k">Used</span><span class="kv-v '+(p>90?'cr':p>75?'cw':'ca')+'">'+p+'%</span></div><div class="pb"><div class="pb-f" style="width:'+p+'%;background:'+col+'"></div></div><div class="kv"><span class="kv-k">Total</span><span class="kv-v">'+tot+'</span></div><div class="kv"><span class="kv-k">Free</span><span class="kv-v">'+fr+'</span></div></div>';
+  return '<div class="gc"><div class="gc-title"><span class="gc-icon">\u{1F4CA}</span>Memory</div><div class="kv"><span class="kv-k">Used</span><span class="kv-v '+(p>90?'cr':p>75?'cw':'ca')+'">'+p+'%</span></div><div class="pb"><div class="pb-f" style="width:'+p+'%;background:'+col+'"></div></div><div class="kv"><span class="kv-k">Total</span><span class="kv-v">'+tot+'</span></div><div class="kv"><span class="kv-k">Free</span><span class="kv-v">'+fr+'</span></div>'+(d.SwapTotalGB?'<div class="kv"><span class="kv-k">Swap</span><span class="kv-v">'+d.SwapUsedPercent+'% of '+d.SwapTotalGB+' GB</span></div>':'')+'</div>';
 }
 
 function rDisk(items){
+  // Filter out Docker internal mounts
+  const real=items.filter(d=>{
+    const m=d.drive||d.mountpoint||'';
+    return m==='/'||m.startsWith('/home')||m.startsWith('/mnt')||m.startsWith('/media')||/^[A-Z]:/.test(m);
+  });
+  const show=real.length?real:items.slice(0,2);
   let h='';
-  items.forEach(d=>{
+  show.forEach(d=>{
     const p=d.percent||d.used_percent||0,col=p>90?'var(--red)':p>75?'var(--amber)':'var(--cyan)';
-    h+='<div class="gc" style="margin-top:6px"><div class="gc-title"><span class="gc-icon">\u{1F4BF}</span>'+(d.drive||d.mountpoint||'Disk')+'</div><div class="kv"><span class="kv-k">Used</span><span class="kv-v '+(p>90?'cr':p>75?'cw':'cc')+'">'+p+'%</span></div><div class="pb"><div class="pb-f" style="width:'+p+'%;background:'+col+'"></div></div><div class="kv"><span class="kv-k">Free</span><span class="kv-v">'+d.free_gb+' GB</span></div></div>';
+    h+='<div class="gc" style="margin-top:6px"><div class="gc-title"><span class="gc-icon">\u{1F4BF}</span>'+(d.drive||d.mountpoint||'Disk')+'</div><div class="kv"><span class="kv-k">Used</span><span class="kv-v '+(p>90?'cr':p>75?'cw':'cc')+'">'+p+'%</span></div><div class="pb"><div class="pb-f" style="width:'+p+'%;background:'+col+'"></div></div><div class="kv"><span class="kv-k">Free</span><span class="kv-v">'+(d.free_gb||'?')+' GB</span></div></div>';
   });
   return h;
 }
@@ -462,11 +509,39 @@ function rProc(items){
 
 function tryCard(d){
   if(!d) return null;
+  // System overview (has os + cpu_cores + memory_total_gb)
+  if(d.os&&d.cpu_cores&&d.memory_total_gb) return rOverview(d);
+  // CPU info (has NumberOfCores + LoadPercentage)
+  if(d.NumberOfCores&&d.LoadPercentage!==undefined) return rCPU(d);
+  // Memory (has UsedPercent + TotalGB/TotalMB)
   if(d.UsedPercent!==undefined&&(d.TotalGB||d.TotalMB)) return rMem(d);
+  // Disk array
   if(Array.isArray(d)&&d[0]&&(d[0].drive||d[0].percent!==undefined||d[0].mountpoint)) return rDisk(d);
+  // Health check
   if(d.checks&&d.alerts!==undefined) return rHealth(d);
+  // Process list
   if(Array.isArray(d)&&d[0]&&d[0].Name&&d[0].Id) return rProc(d);
+  // Network interfaces
+  if(Array.isArray(d)&&d[0]&&d[0].interface) return rNet(d);
+  // Platform detect
+  if(d.current_stack&&d.available_commands) return rPlatform(d);
   return null;
+}
+
+function rNet(items){
+  let h='<div class="gc"><div class="gc-title"><span class="gc-icon">\u{1F310}</span>Network</div>';
+  items.forEach(i=>{h+='<div class="kv"><span class="kv-k">'+(i.interface||i.name)+'</span><span class="kv-v">'+(i.ip||'—')+'</span></div>'});
+  return h+'</div>';
+}
+
+function rPlatform(d){
+  let h='<div class="gc"><div class="gc-title"><span class="gc-icon">\u{1F5A5}</span>Platform</div>';
+  h+='<div class="kv"><span class="kv-k">OS</span><span class="kv-v">'+d.os+' '+d.release+'</span></div>';
+  h+='<div class="kv"><span class="kv-k">Arch</span><span class="kv-v">'+d.machine+'</span></div>';
+  h+='<div class="kv"><span class="kv-k">Stack</span><span class="kv-v">'+d.current_stack+'</span></div>';
+  h+='<div class="kv"><span class="kv-k">Python</span><span class="kv-v">'+d.python+'</span></div>';
+  if(d.installed_tools){const t=Object.entries(d.installed_tools);if(t.length){h+='<div style="margin-top:8px;font-size:11px;color:var(--t3)">Tools: '+t.map(x=>x[0]).join(', ')+'</div>'}}
+  return h+'</div>';
 }
 
 function fmtResult(data){
