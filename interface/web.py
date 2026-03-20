@@ -574,16 +574,26 @@ function utilsPanel(){
       {i:'\u2764',n:'Health',d:'Здоровье',c:'watchdog.check'},
     ]},
     {name:'AI & Learn',icon:'\u{1F916}',tools:[
-      {i:'\u{1F4DA}',n:'Knowledge',d:'База знаний',c:'ingest.stats'},
       {i:'\u{1F9E0}',n:'Learner',d:'Статус обучения',c:'learner.status'},
-      {i:'\u{1F4E5}',n:'Ingest',d:'Загрузить',c:'ask:Путь к файлу/папке|ingest.scan path=$'},
-      {i:'\u{1F517}',n:'Mesh',d:'Ноды',c:'mesh.nodes'},
-      {i:'\u{1F4DD}',n:'Notes',d:'Заметки',c:'utils.notes'},
+      {i:'\u{1F4DA}',n:'Knowledge',d:'База знаний',c:'ingest.stats'},
+      {i:'\u{1F4E5}',n:'Ingest',d:'Загрузить данные',c:'ask:Путь к файлу/папке|ingest.scan path=$'},
+      {i:'\u{1F517}',n:'Mesh',d:'Ноды сети',c:'mesh.nodes'},
       {i:'\u2B50',n:'Skills',d:'Навыки',c:'skills'},
+      {i:'\u{1F44D}',n:'Feedback',d:'Оценить ответ',c:'learner.feedback good'},
+      {i:'\u{1F4A1}',n:'Auto Skills',d:'Авто-навыки',c:'learner.auto_skills'},
+      {i:'\u{1F4CB}',n:'Lessons',d:'Уроки',c:'learner.lessons'},
     ]},
-    {name:'Convert',icon:'\u{1F504}',tools:[
+    {name:'Design',icon:'\u{1F3A8}',tools:[
+      {i:'\u{1F3A8}',n:'Palette',d:'Палитра',c:'designer.palette'},
+      {i:'\u{1F308}',n:'Colors',d:'Цвета темы',c:'designer.colors'},
+      {i:'\u{1F4D0}',n:'Layout',d:'Макет',c:'ask:Описание макета|designer.layout description=$'},
+      {i:'\u{1F5BC}',n:'Generate',d:'HTML страница',c:'ask:Описание страницы|designer.generate description=$'},
+    ]},
+    {name:'Tools',icon:'\u{1F504}',tools:[
       {i:'\u{1F510}',n:'Hash',d:'MD5/SHA',c:'ask:Путь к файлу|utils.hash path=$'},
       {i:'\u{1F4E6}',n:'Base64',d:'Encode',c:'ask:Текст|utils.b64encode text=$'},
+      {i:'\u{1F4DD}',n:'Notes',d:'Заметки',c:'utils.notes'},
+      {i:'\u{1F4DD}',n:'New Note',d:'Создать',c:'ask:Имя заметки|ask:Текст|utils.note name=$ text=$'},
     ]},
   ];
   let h='';
@@ -796,14 +806,74 @@ function tryCard(d){
   if(Array.isArray(d)&&d[0]&&d[0].Name&&d[0].Id) return rProc(d);
   // Network interfaces
   if(Array.isArray(d)&&d[0]&&d[0].interface) return rNet(d);
+  // File list (from files.list)
+  if(Array.isArray(d)&&d[0]&&d[0].name&&d[0].type&&(d[0].type==='file'||d[0].type==='dir')) return rFileList(d);
+  // Learner status
+  if(d.observations!==undefined&&d.lessons_learned!==undefined) return rLearner(d);
+  // Mesh nodes (object with role+status)
+  if(!Array.isArray(d)&&Object.values(d)[0]&&Object.values(d)[0].role) return rMesh(d);
+  // Ingest stats
+  if(d.total_files!==undefined&&d.total_domains!==undefined) return rIngestStats(d);
   // Platform detect
   if(d.current_stack&&d.available_commands) return rPlatform(d);
+  // Utils ls (has path + items array)
+  if(d.path&&d.items&&Array.isArray(d.items)) return rFileList(d.items);
   return null;
 }
 
 function rNet(items){
   let h='<div class="gc"><div class="gc-title"><span class="gc-icon">\u{1F310}</span>Network</div>';
   items.forEach(i=>{h+='<div class="kv"><span class="kv-k">'+(i.interface||i.name)+'</span><span class="kv-v">'+(i.ip||'—')+'</span></div>'});
+  return h+'</div>';
+}
+
+function rLearner(d){
+  const obs=d.observations||0,les=d.lessons_learned||0,maps=d.mappings||0;
+  const fb=d.feedback||{};const sr=d.success_rate||'0%';
+  let h='<div class="gc"><div class="gc-title"><span class="gc-icon">\u{1F9E0}</span>Learner</div>';
+  h+=statsStrip([{v:obs,l:'Observed',c:'ca'},{v:les,l:'Lessons',c:'cc'},{v:maps,l:'Mappings',c:'cg'},{v:sr,l:'Success',c:'cp'}]);
+  if(fb.total){h+='<div style="margin-top:10px;font-size:12px;color:var(--t2)">Feedback: \u{1F44D} '+fb.good+' \u{1F44E} '+fb.bad+'</div>'}
+  if(d.auto_skills_created){h+='<div style="font-size:12px;color:var(--green);margin-top:4px">\u2B50 '+d.auto_skills_created+' auto-skills created</div>'}
+  if(d.top_patterns&&d.top_patterns.length){
+    h+='<div style="margin-top:10px;font-size:11px;color:var(--t3);text-transform:uppercase;font-weight:600">Top patterns</div>';
+    d.top_patterns.forEach(p=>{h+='<div class="kv"><span class="kv-k" style="font-size:12px">'+p.pattern+'</span><span class="kv-v" style="font-size:12px">'+p.count+'x</span></div>'});
+  }
+  return h+'</div>';
+}
+
+function rMesh(d){
+  let h='<div class="gc"><div class="gc-title"><span class="gc-icon">\u{1F517}</span>Mesh Network</div>';
+  const nodes=Object.entries(d);
+  nodes.forEach(([name,info])=>{
+    const online=info.status==='online';
+    const dot=online?'\u{1F7E2}':'\u{1F534}';
+    const role=info.role==='hub'?'\u{1F451}':'';
+    h+='<div class="kv"><span class="kv-k">'+dot+' '+role+' '+name+'</span><span class="kv-v" style="color:'+(online?'var(--green)':'var(--red)')+'">'+info.status+'</span></div>';
+  });
+  h+='<div style="margin-top:8px;font-size:12px;color:var(--t3)">'+nodes.length+' nodes in network</div>';
+  return h+'</div>';
+}
+
+function rFileList(items){
+  let h='<div class="gc"><div class="gc-title"><span class="gc-icon">\u{1F4C1}</span>Files</div>';
+  items.forEach(f=>{
+    const icon=f.type==='dir'?'\u{1F4C1}':'\u{1F4C4}';
+    const size=f.size?(' \u2022 '+(f.size>1048576?(f.size/1048576).toFixed(1)+' MB':f.size>1024?(f.size/1024).toFixed(1)+' KB':f.size+' B')):'';
+    h+='<div class="kv"><span class="kv-k" style="font-size:13px">'+icon+' '+f.name+'</span><span class="kv-v" style="font-size:12px;color:var(--t3)">'+size+'</span></div>';
+  });
+  return h+'</div>';
+}
+
+function rIngestStats(d){
+  let h='<div class="gc"><div class="gc-title"><span class="gc-icon">\u{1F4DA}</span>Knowledge Store</div>';
+  h+=statsStrip([{v:d.total_files||0,l:'Files',c:'ca'},{v:d.total_entries||0,l:'Entries',c:'cc'},{v:d.total_domains||0,l:'Domains',c:'cg'},{v:d.queue_size||0,l:'Queue',c:'cp'}]);
+  if(d.domains&&Object.keys(d.domains).length){
+    h+='<div style="margin-top:10px">';
+    Object.entries(d.domains).forEach(([name,count])=>{
+      h+='<div class="kv"><span class="kv-k" style="font-size:12px;text-transform:capitalize">'+name+'</span><span class="kv-v" style="font-size:12px">'+count+' entries</span></div>';
+    });
+    h+='</div>';
+  }
   return h+'</div>';
 }
 
@@ -881,14 +951,18 @@ async function init(){
     if(health.alerts&&health.alerts.length){health.alerts.forEach(a=>{h+=alert_(a.level,a.message,a.level==='CRITICAL')})}
     else{h+=alert_('OK','System healthy')}
 
-    // Module grid
+    // Health
     h+=modGrid();
 
+    // === UTILITIES DESKTOP ===
+    h+='<div style="margin-top:16px;font-size:12px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:8px">\u{1F9F0} Utilities</div>';
+    h+=utilsPanel();
+
     // Quick chips
-    h+='<div class="chips"><span class="chip" onclick="quick(\'как дела у системы?\')">Status</span><span class="chip" onclick="quick(\'покажи процессы\')">Processes</span><span class="chip" onclick="quick(\'что с памятью?\')">Memory</span><span class="chip" onclick="quick(\'сколько места?\')">Disks</span><span class="chip" onclick="quick(\'проверь сеть\')">Network</span></div>';
+    h+='<div class="chips" style="margin-top:14px"><span class="chip" onclick="quick(\'как дела у системы?\')">Status</span><span class="chip" onclick="quick(\'покажи процессы\')">Processes</span><span class="chip" onclick="quick(\'что с памятью?\')">Memory</span><span class="chip" onclick="quick(\'utils.diskmap path=/\')">DiskMap</span><span class="chip" onclick="quick(\'проверь сеть\')">Network</span><span class="chip" onclick="quick(\'mesh.nodes\')">Mesh</span><span class="chip" onclick="quick(\'learner.status\')">Learner</span></div>';
 
     w.innerHTML=h;add(w,'a');
-    // Populate utils panel
+    // Also populate the input-area panel
     document.getElementById('upanel').innerHTML=utilsPanel();
   }catch(e){add('Starting up...','a')}
   I.focus();
