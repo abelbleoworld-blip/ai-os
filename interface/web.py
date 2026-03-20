@@ -487,10 +487,24 @@ html,body{height:100%;font-family:'SF Pro Display','Inter',-apple-system,system-
 .ib{width:44px;height:44px;border-radius:14px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;font-size:17px}
 .ib-send{background:var(--accent);color:white}.ib-send:hover{background:#5558e6;transform:scale(1.05)}
 .ib-g{background:transparent;border:1px solid rgba(255,255,255,0.07);color:var(--t3)}.ib-g:hover{border-color:var(--accent);color:var(--accent2)}
-.ib-mic{background:linear-gradient(135deg,var(--red),var(--amber));color:white;border:none}
-.ib-mic:hover{transform:scale(1.05);box-shadow:0 0 16px rgba(239,68,68,0.25)}
-.ib-mic.rec{animation:mpulse 1.5s ease infinite}
+.ib-mic{background:linear-gradient(135deg,#6366F1,#06B6D4);color:white;border:none}
+.ib-mic:hover{transform:scale(1.05);box-shadow:0 0 16px rgba(99,102,241,0.3)}
+.ib-mic.rec{animation:mpulse 1.5s ease infinite;background:linear-gradient(135deg,var(--red),var(--amber))}
 @keyframes mpulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.3)}50%{box-shadow:0 0 0 12px rgba(239,68,68,0)}}
+
+/* Floating mic (Alisa-style) */
+.fmic{position:fixed;bottom:90px;right:24px;z-index:50;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#6366F1,#06B6D4);color:white;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 24px rgba(99,102,241,0.35);transition:all .2s}
+.fmic:hover{transform:scale(1.1);box-shadow:0 6px 32px rgba(99,102,241,0.45)}
+.fmic:active{transform:scale(.95)}
+.fmic.rec{background:linear-gradient(135deg,var(--red),var(--amber));animation:fmicPulse 1.5s ease infinite}
+@keyframes fmicPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4);transform:scale(1)}50%{box-shadow:0 0 0 16px rgba(239,68,68,0);transform:scale(1.05)}}
+.fmic-label{position:fixed;bottom:76px;right:88px;z-index:50;background:rgba(0,0,0,0.7);color:var(--text);padding:6px 14px;border-radius:8px;font-size:12px;pointer-events:none;opacity:0;transition:opacity .2s}
+.fmic-label.show{opacity:1}
+
+/* Philosophy quote */
+.philo{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:var(--rs);padding:16px;margin-top:14px}
+.philo-title{font-size:11px;color:var(--t3);margin-bottom:6px}
+.philo-text{font-size:14px;color:var(--t2);line-height:1.6;font-style:italic}
 
 /* Toast */
 .toasts{position:fixed;top:48px;right:16px;z-index:200;display:flex;flex-direction:column;gap:8px;pointer-events:none}
@@ -519,6 +533,10 @@ html,body{height:100%;font-family:'SF Pro Display','Inter',-apple-system,system-
   <span class="top-ctx" id="sCtx">AI-OS</span>
 </div>
 <div class="toasts" id="toasts"></div>
+
+<!-- FLOATING MIC (Alisa-style) -->
+<button class="fmic" id="fmic" onclick="togMic()">&#127908;</button>
+<div class="fmic-label" id="fmicLabel">&#127908; Voice</div>
 
 <!-- FILE BROWSER -->
 <div class="fbrowser" id="fbrowser">
@@ -1192,15 +1210,12 @@ async function init(){
     if(health.alerts&&health.alerts.length){health.alerts.forEach(a=>{h+=alert_(a.level,a.message,a.level==='CRITICAL')})}
     else{h+=alert_('OK','System healthy')}
 
-    // Health
-    h+=modGrid();
-
-    // === UTILITIES DESKTOP ===
-    h+='<div style="margin-top:16px;font-size:12px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:8px">\u{1F9F0} Utilities</div>';
-    h+=utilsPanel();
-
+    // Health alert
     // Quick chips
-    h+='<div class="chips" style="margin-top:14px"><span class="chip" onclick="quick(\'как дела у системы?\')">Status</span><span class="chip" onclick="quick(\'покажи процессы\')">Processes</span><span class="chip" onclick="quick(\'что с памятью?\')">Memory</span><span class="chip" onclick="quick(\'utils.diskmap path=/\')">DiskMap</span><span class="chip" onclick="quick(\'проверь сеть\')">Network</span><span class="chip" onclick="quick(\'mesh.nodes\')">Mesh</span><span class="chip" onclick="quick(\'learner.status\')">Learner</span></div>';
+    h+='<div class="chips"><span class="chip" onclick="quick(\'проверь систему\')">System</span><span class="chip" onclick="quick(\'покажи процессы\')">Processes</span><span class="chip" onclick="quick(\'что с памятью?\')">Memory</span><span class="chip" onclick="quick(\'сколько места?\')">Disks</span><span class="chip" onclick="quick(\'mesh.nodes\')">Mesh</span></div>';
+
+    // Philosophy
+    h+='<div class="philo"><div class="philo-title">Philosophy</div><div class="philo-text">AI-OS \u2014 this is not an interface, it\'s just a conversation. You speak \u2014 the system acts. Everything else happens on its own.</div></div>';
 
     w.innerHTML=h;add(w,'a');
     // Also populate the input-area panel
@@ -1257,13 +1272,15 @@ if('Notification' in window&&Notification.permission==='default'){Notification.r
 let rec=null,isR=false;
 function togMic(){
   if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){toast('Voice requires Chrome','w');return}
-  if(isR){if(rec)rec.stop();document.getElementById('mic').classList.remove('rec');isR=false;return}
+  const fm=document.getElementById('fmic'),mb=document.getElementById('mic'),fl=document.getElementById('fmicLabel');
+  if(isR){if(rec)rec.stop();if(fm)fm.classList.remove('rec');if(mb)mb.classList.remove('rec');if(fl)fl.classList.remove('show');isR=false;return}
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;rec=new SR();rec.lang='ru-RU';rec.interimResults=true;rec.continuous=false;
-  document.getElementById('mic').classList.add('rec');isR=true;let fin='';
-  rec.onresult=e=>{let tmp='';for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)fin+=e.results[i][0].transcript;else tmp+=e.results[i][0].transcript}I.value=fin+tmp};
-  rec.onend=()=>{document.getElementById('mic').classList.remove('rec');isR=false;if(fin.trim()){I.value=fin.trim();send()}};
-  rec.onerror=e=>{document.getElementById('mic').classList.remove('rec');isR=false;if(e.error!=='no-speech')toast('Mic: '+e.error,'w')};
-  rec.start();toast('Слушаю...','ok',3000);
+  if(fm)fm.classList.add('rec');if(mb)mb.classList.add('rec');isR=true;let fin='';
+  if(fl){fl.textContent='\u{1F3A4} Listening...';fl.classList.add('show')}
+  rec.onresult=e=>{let tmp='';for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)fin+=e.results[i][0].transcript;else tmp+=e.results[i][0].transcript}I.value=fin+tmp;if(fl)fl.textContent='\u{1F3A4} '+(fin+tmp).slice(0,30)};
+  rec.onend=()=>{if(fm)fm.classList.remove('rec');if(mb)mb.classList.remove('rec');if(fl)fl.classList.remove('show');isR=false;if(fin.trim()){I.value=fin.trim();send()}};
+  rec.onerror=e=>{if(fm)fm.classList.remove('rec');if(mb)mb.classList.remove('rec');if(fl)fl.classList.remove('show');isR=false;if(e.error!=='no-speech')toast('Mic: '+e.error,'w')};
+  rec.start();toast('\u{1F3A4} Listening...','ok',3000);
 }
 
 init();
