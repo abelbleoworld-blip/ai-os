@@ -950,6 +950,110 @@ function rPlatform(d){
   return h+'</div>';
 }
 
+/* === UNIVERSAL AUTO-RENDERER === */
+function autoRender(d){
+  // 1. null/undefined
+  if(d===null||d===undefined) return '';
+  // 2. String — render as text (check if contains useful info)
+  if(typeof d==='string'){
+    if(d.includes('reachable')||d.includes('OK')||d.includes('healthy')||d.includes('порядке'))
+      return '<div class="al al-ok"><div class="al-dot"></div>'+d+'</div>';
+    if(d.includes('error')||d.includes('Error')||d.includes('ошибка'))
+      return '<div class="al al-c"><div class="al-dot"></div>'+d+'</div>';
+    if(d.includes('warning')||d.includes('Warning'))
+      return '<div class="al al-w"><div class="al-dot"></div>'+d+'</div>';
+    return '<div style="padding:8px 0;line-height:1.6">'+d.replace(/\n/g,'<br>')+'</div>';
+  }
+  // 3. Number/boolean
+  if(typeof d==='number'||typeof d==='boolean')
+    return '<span style="font-weight:600;color:var(--accent2)">'+d+'</span>';
+  // 4. Array
+  if(Array.isArray(d)){
+    if(!d.length) return '<div style="color:var(--t3);padding:8px">Empty</div>';
+    // Array of objects → auto table
+    if(typeof d[0]==='object'&&d[0]!==null){
+      const keys=Object.keys(d[0]).filter(k=>!k.startsWith('_'));
+      let h='<div class="gc"><table class="ptbl"><tr>';
+      keys.slice(0,6).forEach(k=>{h+='<th>'+k+'</th>'});
+      h+='</tr>';
+      d.slice(0,15).forEach(row=>{
+        h+='<tr>';
+        keys.slice(0,6).forEach(k=>{
+          let v=row[k];
+          if(v===null||v===undefined) v='—';
+          else if(typeof v==='object') v=JSON.stringify(v);
+          else v=String(v);
+          if(v.length>40) v=v.slice(0,40)+'...';
+          h+='<td>'+v+'</td>';
+        });
+        h+='</tr>';
+      });
+      if(d.length>15) h+='<tr><td colspan="'+keys.length+'" style="color:var(--t3);text-align:center">...and '+(d.length-15)+' more</td></tr>';
+      return h+'</table></div>';
+    }
+    // Array of strings/numbers → list
+    let h='<div class="gc">';
+    d.slice(0,20).forEach(item=>{h+='<div style="padding:4px 0;font-size:13px;color:var(--t2);border-bottom:1px solid rgba(255,255,255,0.03)">'+(typeof item==='object'?JSON.stringify(item):item)+'</div>'});
+    return h+'</div>';
+  }
+  // 5. Object → smart card
+  if(typeof d==='object'){
+    const keys=Object.keys(d).filter(k=>!k.startsWith('_'));
+    if(!keys.length) return '';
+    // Detect patterns
+    const colors=['var(--accent2)','var(--green)','var(--cyan)','var(--amber)','var(--purple)','var(--red)'];
+    let h='<div class="gc">';
+    let ci=0;
+    keys.forEach(k=>{
+      const v=d[k];
+      if(v===null||v===undefined) return;
+      // Nested object → sub-section
+      if(typeof v==='object'&&!Array.isArray(v)){
+        h+='<div style="margin-top:10px;font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;font-weight:600">'+k+'</div>';
+        Object.entries(v).forEach(([sk,sv])=>{
+          const val=typeof sv==='object'?JSON.stringify(sv):String(sv);
+          h+='<div class="kv"><span class="kv-k">'+sk+'</span><span class="kv-v" style="font-size:13px">'+val.slice(0,80)+'</span></div>';
+        });
+      }
+      // Array → compact list
+      else if(Array.isArray(v)){
+        h+='<div style="margin-top:10px;font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;font-weight:600">'+k+' ('+v.length+')</div>';
+        v.slice(0,5).forEach(item=>{
+          h+='<div style="padding:3px 0;font-size:12px;color:var(--t2)">\u2022 '+(typeof item==='object'?JSON.stringify(item):item)+'</div>';
+        });
+        if(v.length>5) h+='<div style="font-size:11px;color:var(--t3)">...and '+(v.length-5)+' more</div>';
+      }
+      // Number with % → progress bar
+      else if(typeof v==='number'&&(k.toLowerCase().includes('percent')||k.toLowerCase().includes('pct')||k.toLowerCase().includes('rate'))){
+        const col=v>90?'var(--red)':v>75?'var(--amber)':colors[ci%colors.length];
+        h+='<div class="kv"><span class="kv-k">'+k+'</span><span class="kv-v" style="color:'+col+'">'+v+'%</span></div>';
+        h+='<div class="pb"><div class="pb-f" style="width:'+Math.min(v,100)+'%;background:'+col+'"></div></div>';
+      }
+      // Number → colored value
+      else if(typeof v==='number'){
+        h+='<div class="kv"><span class="kv-k">'+k+'</span><span class="kv-v" style="color:'+colors[ci%colors.length]+'">'+v+'</span></div>';
+      }
+      // Boolean → green/red dot
+      else if(typeof v==='boolean'){
+        h+='<div class="kv"><span class="kv-k">'+k+'</span><span class="kv-v">'+(v?'\u{1F7E2} Yes':'\u{1F534} No')+'</span></div>';
+      }
+      // String → key-value
+      else {
+        const sv=String(v);
+        if(sv.length>100){
+          h+='<div style="margin-top:8px;font-size:11px;color:var(--t3);text-transform:uppercase;font-weight:600">'+k+'</div>';
+          h+='<div style="font-size:13px;color:var(--t2);padding:4px 0;line-height:1.5">'+sv.slice(0,300)+(sv.length>300?'...':'')+'</div>';
+        } else {
+          h+='<div class="kv"><span class="kv-k">'+k+'</span><span class="kv-v" style="font-size:13px">'+sv+'</span></div>';
+        }
+      }
+      ci++;
+    });
+    return h+'</div>';
+  }
+  return String(d);
+}
+
 function fmtResult(data){
   const el=document.createElement('div');
   if(data.result&&data.result.comment){
@@ -957,7 +1061,7 @@ function fmtResult(data){
     if(data.result.results){data.result.results.forEach(r=>{
       const inner=dig(r.result);const card=tryCard(inner);
       if(card) el.innerHTML+=card;
-      else if(inner){const c=document.createElement('div');c.className='cblk';c.textContent=typeof inner==='string'?inner:JSON.stringify(inner,null,2);el.appendChild(c)}
+      else el.innerHTML+=autoRender(inner);
     })}
     return el;
   }
@@ -965,9 +1069,9 @@ function fmtResult(data){
   if(data.result){
     const inner=dig(data.result);const card=tryCard(inner);
     if(card){el.innerHTML=card;return el}
-    const c=document.createElement('div');c.className='cblk';c.textContent=typeof inner==='string'?inner:JSON.stringify(inner,null,2);el.appendChild(c);return el;
+    el.innerHTML=autoRender(inner);return el;
   }
-  return JSON.stringify(data,null,2);
+  el.innerHTML=autoRender(data);return el;
 }
 
 /* === STATUS === */
