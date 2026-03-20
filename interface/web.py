@@ -354,13 +354,33 @@ html,body{height:100%;font-family:'SF Pro Display','Inter',-apple-system,system-
 .abtn-d{background:var(--red);color:white}.abtn-d:hover{background:#dc2626}
 .abtn-s{background:rgba(255,255,255,0.06);color:var(--t2);border:1px solid rgba(255,255,255,0.08)}.abtn-s:hover{border-color:var(--accent);color:var(--accent2)}
 
-/* Module grid (appears briefly) */
+/* Module grid */
 .modgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
 .modtile{background:rgba(255,255,255,0.05);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid rgba(255,255,255,0.08);border-radius:var(--rs);padding:16px 10px;text-align:center;cursor:pointer;transition:all .15s}
 .modtile:hover{background:rgba(255,255,255,0.09);transform:translateY(-2px)}
 .modtile:active{transform:scale(.95)}
 .modtile-i{font-size:24px;margin-bottom:6px;display:block}
 .modtile-n{font-size:11px;color:var(--t2);font-weight:500}
+
+/* Toolbar button */
+.tb-btn{width:40px;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,0.07);background:transparent;color:var(--t3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all .15s;flex-shrink:0}
+.tb-btn:hover{border-color:var(--accent);color:var(--accent2);background:rgba(99,102,241,0.08)}
+.tb-btn.active{border-color:var(--accent);color:var(--accent2);background:rgba(99,102,241,0.12)}
+
+/* Utils panel */
+.upanel{display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:var(--r);padding:16px;margin-bottom:8px;backdrop-filter:blur(30px);max-height:60vh;overflow-y:auto}
+.upanel.open{display:block;animation:mIn .18s ease}
+.upanel::-webkit-scrollbar{width:3px}.upanel::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:3px}
+.ucat{margin-bottom:14px}
+.ucat-title{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ucat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.utile{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px;cursor:pointer;transition:all .15s;text-align:center}
+.utile:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.12);transform:translateY(-1px)}
+.utile:active{transform:scale(.96)}
+.utile-i{font-size:18px;display:block;margin-bottom:4px}
+.utile-n{font-size:11px;color:var(--t2);font-weight:500}
+.utile-d{font-size:9px;color:var(--t3);margin-top:2px}
+@media(max-width:600px){.ucat-grid{grid-template-columns:repeat(2,1fr)}}
 
 /* File card */
 .fcard{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:var(--rs);padding:16px;margin-top:8px;display:flex;align-items:center;gap:14px}
@@ -433,7 +453,9 @@ html,body{height:100%;font-family:'SF Pro Display','Inter',-apple-system,system-
 <div class="wrap">
   <div class="scroll" id="chat"></div>
   <div class="inp-area">
+    <div class="upanel" id="upanel"></div>
     <div class="inp-row">
+      <button class="tb-btn" id="ubtn" onclick="toggleUtils()" title="Utils">\u2630</button>
       <input type="text" class="inp-f" id="inp" placeholder="Скажи что-нибудь..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();send()}">
       <button class="ib ib-g" onclick="document.getElementById('fI').click()" title="File">&#128206;</button>
       <input type="file" id="fI" style="display:none" onchange="upFile(this)">
@@ -495,6 +517,88 @@ function modGrid(){
   let h='<div class="modgrid">';
   mods.forEach(m=>{h+='<div class="modtile" onclick="quick(\''+m.c+'\')"><span class="modtile-i">'+m.i+'</span><span class="modtile-n">'+m.n+'</span></div>'});
   return h+'</div>';
+}
+
+function utilsPanel(){
+  const cats=[
+    {name:'Files',icon:'\u{1F4C1}',tools:[
+      {i:'\u{1F4C2}',n:'Browse',d:'Файлы',c:'utils.ls path=/app'},
+      {i:'\u{1F332}',n:'Tree',d:'Дерево',c:'utils.tree path=/app depth=2'},
+      {i:'\u{1F50D}',n:'Find',d:'Поиск',c:'ask:Что ищем? (напр. *.py)|utils.find pattern=$'},
+      {i:'\u{1F4CB}',n:'Recent',d:'Недавние',c:'utils.recent'},
+      {i:'\u{1F4CA}',n:'Size',d:'Размер',c:'ask:Путь к папке/файлу|utils.size path=$'},
+      {i:'\u{1F503}',n:'Duplicates',d:'Дубликаты',c:'utils.duplicates path=/app'},
+    ]},
+    {name:'Terminal',icon:'\u{1F4BB}',tools:[
+      {i:'\u2318',n:'Run',d:'Команда',c:'ask:Введи команду|utils.exec command=$'},
+      {i:'\u{1F50E}',n:'Which',d:'Найти прогу',c:'ask:Имя программы|utils.which program=$'},
+      {i:'\u{1F4DD}',n:'Env',d:'Переменные',c:'utils.env'},
+      {i:'\u{1F6AA}',n:'Ports',d:'Открытые',c:'utils.ports'},
+      {i:'\u{1F310}',n:'IP',d:'Адреса',c:'utils.ip'},
+      {i:'\u2B06',n:'Uptime',d:'Аптайм',c:'utils.uptime'},
+    ]},
+    {name:'Text',icon:'\u{1F4DD}',tools:[
+      {i:'\u{1F50D}',n:'Grep',d:'Поиск текста',c:'ask:Что ищем?|utils.grep pattern=$'},
+      {i:'\u{1F4C4}',n:'Preview',d:'Превью',c:'ask:Путь к файлу|utils.preview path=$'},
+      {i:'\u{1F522}',n:'Count',d:'Строки/слова',c:'ask:Путь к файлу|utils.wc path=$'},
+      {i:'\u2194',n:'Diff',d:'Сравнить',c:'ask:Файл 1|ask:Файл 2|utils.diff file1=$ file2=$'},
+    ]},
+    {name:'System',icon:'\u2699',tools:[
+      {i:'\u{1F4CA}',n:'Top',d:'Процессы',c:'utils.top'},
+      {i:'\u{1F4BE}',n:'Disk',d:'Место',c:'utils.df'},
+      {i:'\u{1F9E0}',n:'Overview',d:'Обзор',c:'system.overview'},
+      {i:'\u2764',n:'Health',d:'Здоровье',c:'watchdog.check'},
+    ]},
+    {name:'AI & Learn',icon:'\u{1F916}',tools:[
+      {i:'\u{1F4DA}',n:'Knowledge',d:'База знаний',c:'ingest.stats'},
+      {i:'\u{1F9E0}',n:'Learner',d:'Статус обучения',c:'learner.status'},
+      {i:'\u{1F4E5}',n:'Ingest',d:'Загрузить',c:'ask:Путь к файлу/папке|ingest.scan path=$'},
+      {i:'\u{1F517}',n:'Mesh',d:'Ноды',c:'mesh.nodes'},
+      {i:'\u{1F4DD}',n:'Notes',d:'Заметки',c:'utils.notes'},
+      {i:'\u2B50',n:'Skills',d:'Навыки',c:'skills'},
+    ]},
+    {name:'Convert',icon:'\u{1F504}',tools:[
+      {i:'\u{1F510}',n:'Hash',d:'MD5/SHA',c:'ask:Путь к файлу|utils.hash path=$'},
+      {i:'\u{1F4E6}',n:'Base64',d:'Encode',c:'ask:Текст|utils.b64encode text=$'},
+    ]},
+  ];
+  let h='';
+  cats.forEach(cat=>{
+    h+='<div class="ucat"><div class="ucat-title">'+cat.icon+' '+cat.name+'</div><div class="ucat-grid">';
+    cat.tools.forEach(t=>{
+      h+='<div class="utile" onclick="runUtil(\''+t.c.replace(/'/g,"\\'")+'\')">';
+      h+='<span class="utile-i">'+t.i+'</span><span class="utile-n">'+t.n+'</span><span class="utile-d">'+t.d+'</span></div>';
+    });
+    h+='</div></div>';
+  });
+  return h;
+}
+
+function toggleUtils(){
+  const p=document.getElementById('upanel');
+  const b=document.getElementById('ubtn');
+  if(p.classList.contains('open')){p.classList.remove('open');b.classList.remove('active')}
+  else{p.classList.add('open');b.classList.add('active')}
+}
+
+function runUtil(cmd){
+  // Close panel
+  document.getElementById('upanel').classList.remove('open');
+  document.getElementById('ubtn').classList.remove('active');
+  // Handle ask: prompts
+  if(cmd.startsWith('ask:')){
+    const parts=cmd.split('|');
+    let finalCmd=parts[parts.length-1];
+    for(let i=0;i<parts.length-1;i++){
+      const q=parts[i].replace('ask:','');
+      const answer=prompt(q);
+      if(!answer) return;
+      finalCmd=finalCmd.replace('$',answer);
+    }
+    quick(finalCmd);
+  } else {
+    quick(cmd);
+  }
 }
 
 /* === DATA RENDERERS === */
@@ -686,6 +790,8 @@ async function init(){
     h+='<div class="chips"><span class="chip" onclick="quick(\'как дела у системы?\')">Status</span><span class="chip" onclick="quick(\'покажи процессы\')">Processes</span><span class="chip" onclick="quick(\'что с памятью?\')">Memory</span><span class="chip" onclick="quick(\'сколько места?\')">Disks</span><span class="chip" onclick="quick(\'проверь сеть\')">Network</span></div>';
 
     w.innerHTML=h;add(w,'a');
+    // Populate utils panel
+    document.getElementById('upanel').innerHTML=utilsPanel();
   }catch(e){add('Starting up...','a')}
   I.focus();
 }
