@@ -46,6 +46,7 @@ from modules.software import SoftwareModule
 from ai.brain import Brain
 from ai.claude_brain import ClaudeBrain
 from ai.trainer import AutoTrainer
+from modules.learner import LearnerModule
 
 
 # Настройка логирования

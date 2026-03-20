@@ -30,6 +30,7 @@ from modules.mesh import MeshModule
 from ai.brain import Brain
 from ai.claude_brain import ClaudeBrain
 from ai.trainer import AutoTrainer
+from modules.learner import LearnerModule
 
 bus = SystemBus()
 modules = [FilesModule(), ProcessesModule(), SystemInfoModule(), NetworkModule(), DesignerModule(), PlatformModule(), VersionsModule(), ScannerModule(), SoftwareModule()]
@@ -48,6 +49,16 @@ try:
     brain = ClaudeBrain(bus, base_brain)
 except:
     brain = base_brain
+learner = LearnerModule(bus=bus, brain=brain, trainer=trainer)
+bus.register(learner)
+
+# Hook learner into brain processing
+_orig_process = brain.process
+async def _hooked_process(user_input):
+    result = await _orig_process(user_input)
+    learner.observe(user_input, result)
+    return result
+brain.process = _hooked_process
 
 @asynccontextmanager
 async def lifespan(app):
@@ -56,6 +67,7 @@ async def lifespan(app):
     await watchdog.cmd_check()
     yield
     trainer.save()
+    learner._save()
     brain.save_memory()
 
 app = FastAPI(title="AI-OS", lifespan=lifespan)
