@@ -81,10 +81,6 @@ app = FastAPI(title="AI-OS", lifespan=lifespan)
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard():
-    static_dir = Path(__file__).parent / "static"
-    index_file = static_dir / "index.html"
-    if index_file.exists():
-        return HTMLResponse(index_file.read_text(encoding="utf-8"))
     return DASHBOARD_HTML
 
 @app.get("/api/status")
