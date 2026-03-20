@@ -65,6 +65,7 @@ class UtilsModule(SystemModule):
         self.register_command("b64encode", self.cmd_b64encode, "Base64 encode")
         self.register_command("b64decode", self.cmd_b64decode, "Base64 decode")
         self.register_command("hash", self.cmd_hash, "MD5/SHA256 хеш файла")
+        self.register_command("diskmap", self.cmd_diskmap, "DaisyDisk-style анализ диска")
 
         # === CLIPBOARD / NOTES ===
         self.register_command("note", self.cmd_note, "Сохранить заметку")
@@ -357,6 +358,92 @@ class UtilsModule(SystemModule):
                 f.unlink()
             return f"Note '{name}' deleted"
         return f"Note '{name}' not found"
+
+    # ==================== DISK UTILITY (DaisyDisk style) ====================
+
+    async def cmd_diskmap(self, path="/", depth=2, top=15):
+        """DaisyDisk-style анализ: что занимает место"""
+        p = Path(path).resolve()
+        if not p.exists():
+            return {"error": f"Path not found: {path}"}
+
+        # Get total disk info
+        import psutil
+        try:
+            usage = psutil.disk_usage(str(p))
+            total = usage.total
+            used = usage.used
+            free = usage.free
+        except:
+            total = used = free = 0
+
+        # Scan folders
+        folders = []
+        try:
+            for item in sorted(p.iterdir()):
+                if item.name.startswith('.'):
+                    continue
+                try:
+                    if item.is_dir():
+                        size = sum(f.stat().st_size for f in item.rglob('*') if f.is_file())
+                    else:
+                        size = item.stat().st_size
+                    if size > 0:
+                        folders.append({"name": item.name, "size": size, "is_dir": item.is_dir()})
+                except (PermissionError, OSError):
+                    pass
+        except PermissionError:
+            pass
+
+        folders.sort(key=lambda x: x["size"], reverse=True)
+        folders = folders[:int(top)]
+
+        # Assign colors
+        colors = [
+            "#6366F1", "#22C55E", "#F59E0B", "#EF4444", "#06B6D4",
+            "#A855F7", "#EC4899", "#14B8A6", "#F97316", "#8B5CF6",
+            "#84CC16", "#0EA5E9", "#E11D48", "#10B981", "#FBBF24",
+        ]
+
+        for i, f in enumerate(folders):
+            f["color"] = colors[i % len(colors)]
+            f["size_fmt"] = self._fmt_size(f["size"])
+            f["percent"] = round(f["size"] / used * 100, 1) if used else 0
+
+        # Deep scan for top folder
+        top_children = []
+        if folders and folders[0]["is_dir"] and int(depth) > 1:
+            top_dir = p / folders[0]["name"]
+            try:
+                for item in sorted(top_dir.iterdir()):
+                    if item.name.startswith('.'):
+                        continue
+                    try:
+                        if item.is_dir():
+                            size = sum(f.stat().st_size for f in item.rglob('*') if f.is_file())
+                        else:
+                            size = item.stat().st_size
+                        if size > 0:
+                            top_children.append({"name": item.name, "size": size, "size_fmt": self._fmt_size(size)})
+                    except:
+                        pass
+                top_children.sort(key=lambda x: x["size"], reverse=True)
+                top_children = top_children[:8]
+            except:
+                pass
+
+        return {
+            "_type": "diskmap",
+            "path": str(p),
+            "total": self._fmt_size(total),
+            "used": self._fmt_size(used),
+            "free": self._fmt_size(free),
+            "used_percent": round(used / total * 100, 1) if total else 0,
+            "total_bytes": total,
+            "used_bytes": used,
+            "folders": folders,
+            "top_children": top_children,
+        }
 
     # ==================== HELPERS ====================
 

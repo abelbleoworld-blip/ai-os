@@ -395,6 +395,33 @@ html,body{height:100%;font-family:'SF Pro Display','Inter',-apple-system,system-
 .ptbl td{padding:7px 8px;color:var(--t2);border-bottom:1px solid rgba(255,255,255,0.03)}
 .ptbl td:first-child{color:var(--text);font-weight:500}
 
+/* DaisyDisk-style disk map */
+.dmap{background:var(--card);border:1px solid rgba(255,255,255,0.06);border-radius:var(--rs);padding:20px;margin-top:10px}
+.dmap-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.dmap-title{font-size:15px;font-weight:700}
+.dmap-sub{font-size:12px;color:var(--t3)}
+.dmap-ring{width:140px;height:140px;margin:0 auto 16px;position:relative}
+.dmap-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.dmap-ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.dmap-ring-pct{font-size:28px;font-weight:800;line-height:1}
+.dmap-ring-lbl{font-size:10px;color:var(--t3);margin-top:2px}
+.dmap-bar{display:flex;height:28px;border-radius:8px;overflow:hidden;margin-bottom:16px;gap:2px}
+.dmap-seg{height:100%;min-width:3px;transition:all .3s;position:relative;cursor:pointer;border-radius:4px}
+.dmap-seg:hover{opacity:.8;transform:scaleY(1.15)}
+.dmap-list{display:grid;gap:6px}
+.dmap-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;transition:background .15s;cursor:default}
+.dmap-item:hover{background:rgba(255,255,255,0.04)}
+.dmap-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.dmap-name{flex:1;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dmap-sz{font-size:12px;color:var(--t2);font-weight:600;flex-shrink:0;min-width:60px;text-align:right}
+.dmap-pct{font-size:11px;color:var(--t3);flex-shrink:0;min-width:40px;text-align:right}
+.dmap-detail{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:12px;margin-top:12px}
+.dmap-detail-title{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-weight:600}
+.dmap-minibar{height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;margin-top:4px;margin-bottom:6px}
+.dmap-minibar-f{height:100%;border-radius:2px}
+.dmap-free{display:flex;align-items:center;justify-content:space-between;padding:10px 0;margin-top:8px;border-top:1px solid rgba(255,255,255,0.05)}
+.dmap-free-bar{flex:1;margin:0 14px}
+
 /* Code block */
 .cblk{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px;font-family:'SF Mono','Cascadia Code','Fira Code',monospace;font-size:13px;color:var(--t2);white-space:pre-wrap;max-height:200px;overflow-y:auto;line-height:1.5;margin-top:8px}
 
@@ -546,6 +573,7 @@ function utilsPanel(){
     {name:'System',icon:'\u2699',tools:[
       {i:'\u{1F4CA}',n:'Top',d:'Процессы',c:'utils.top'},
       {i:'\u{1F4BE}',n:'Disk',d:'Место',c:'utils.df'},
+      {i:'\u{1F4BF}',n:'DiskMap',d:'DaisyDisk',c:'utils.diskmap path=/app'},
       {i:'\u{1F9E0}',n:'Overview',d:'Обзор',c:'system.overview'},
       {i:'\u2764',n:'Health',d:'Здоровье',c:'watchdog.check'},
     ]},
@@ -682,8 +710,72 @@ function rProc(items){
   return h+'</table></div>';
 }
 
+function rDiskMap(d){
+  const pct=d.used_percent||0;
+  const circ=2*Math.PI*58;
+  const off=circ*(1-pct/100);
+  const pctCol=pct>90?'var(--red)':pct>75?'var(--amber)':'var(--accent2)';
+
+  let h='<div class="dmap">';
+  h+='<div class="dmap-head"><div><div class="dmap-title">\u{1F4BE} Disk Map</div><div class="dmap-sub">'+d.path+'</div></div><div style="text-align:right"><div style="font-size:13px;color:var(--t2)">'+d.used+' / '+d.total+'</div></div></div>';
+
+  // Ring chart
+  h+='<div class="dmap-ring"><svg viewBox="0 0 130 130">';
+  h+='<circle cx="65" cy="65" r="58" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="12"/>';
+  // Segments on ring
+  let ringOff=0;
+  d.folders.forEach(f=>{
+    const segLen=circ*(f.percent/100);
+    if(segLen>1){
+      h+='<circle cx="65" cy="65" r="58" fill="none" stroke="'+f.color+'" stroke-width="12" stroke-dasharray="'+segLen+' '+(circ-segLen)+'" stroke-dashoffset="'+(-(ringOff))+'" stroke-linecap="butt" style="transition:all .5s"/>';
+    }
+    ringOff+=segLen;
+  });
+  h+='</svg><div class="dmap-ring-center"><div class="dmap-ring-pct" style="color:'+pctCol+'">'+pct+'%</div><div class="dmap-ring-lbl">used</div></div></div>';
+
+  // Horizontal bar
+  h+='<div class="dmap-bar">';
+  d.folders.forEach(f=>{
+    if(f.percent>0.3) h+='<div class="dmap-seg" style="width:'+Math.max(f.percent,1)+'%;background:'+f.color+'" title="'+f.name+': '+f.size_fmt+' ('+f.percent+'%)"></div>';
+  });
+  const freeP=100-pct;
+  if(freeP>0) h+='<div class="dmap-seg" style="width:'+freeP+'%;background:rgba(255,255,255,0.06)" title="Free: '+d.free+'"></div>';
+  h+='</div>';
+
+  // Item list
+  h+='<div class="dmap-list">';
+  d.folders.forEach(f=>{
+    h+='<div class="dmap-item">';
+    h+='<div class="dmap-dot" style="background:'+f.color+'"></div>';
+    h+='<span class="dmap-name">'+(f.is_dir?'\u{1F4C1} ':'\u{1F4C4} ')+f.name+'</span>';
+    h+='<span class="dmap-sz">'+f.size_fmt+'</span>';
+    h+='<span class="dmap-pct">'+f.percent+'%</span>';
+    h+='</div>';
+  });
+  h+='</div>';
+
+  // Free space
+  h+='<div class="dmap-free"><span style="font-size:12px;color:var(--t3)">\u2B1C Free</span><div class="dmap-free-bar"><div class="dmap-minibar"><div class="dmap-minibar-f" style="width:'+freeP+'%;background:rgba(255,255,255,0.15)"></div></div></div><span style="font-size:13px;font-weight:600;color:var(--green)">'+d.free+'</span></div>';
+
+  // Top folder detail
+  if(d.top_children&&d.top_children.length){
+    h+='<div class="dmap-detail"><div class="dmap-detail-title">\u{1F4C1} '+d.folders[0].name+' breakdown</div>';
+    d.top_children.forEach(c=>{
+      const cPct=d.folders[0].size>0?Math.round(c.size/d.folders[0].size*100):0;
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:3px 0"><span style="flex:1;font-size:12px;color:var(--t2)">'+c.name+'</span><span style="font-size:12px;font-weight:600">'+c.size_fmt+'</span></div>';
+      h+='<div class="dmap-minibar"><div class="dmap-minibar-f" style="width:'+cPct+'%;background:'+d.folders[0].color+'"></div></div>';
+    });
+    h+='</div>';
+  }
+
+  h+='</div>';
+  return h;
+}
+
 function tryCard(d){
   if(!d) return null;
+  // DaisyDisk-style disk map
+  if(d._type==='diskmap') return rDiskMap(d);
   // System overview (has os + cpu_cores + memory_total_gb)
   if(d.os&&d.cpu_cores&&d.memory_total_gb) return rOverview(d);
   // CPU info (has NumberOfCores + LoadPercentage)
