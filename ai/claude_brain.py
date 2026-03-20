@@ -118,7 +118,16 @@ class ClaudeBrain:
 {{"actions": [{{"module": "utils", "command": "diskmap", "args": {{"path": "/"}}}}], "comment": "Покажу карту диска — что сколько весит, как в DaisyDisk"}}
 
 Пользователь: "покажи файлы" / "что в папке"
-{{"actions": [{{"module": "utils", "command": "tree", "args": {{"path": "/app", "depth": "2"}}}}], "comment": "Показываю дерево файлов"}}"""
+{{"actions": [{{"module": "utils", "command": "tree", "args": {{"path": "/app", "depth": "2"}}}}], "comment": "Показываю дерево файлов"}}
+
+Пользователь: "обновись" / "обнови систему" / "деплой"
+{{"actions": [{{"module": "admin", "command": "update"}}], "comment": "Обновляю AI-OS — тяну последний код с GitHub"}}
+
+Пользователь: "версия" / "какая версия"
+{{"actions": [{{"module": "admin", "command": "version"}}], "comment": "Показываю текущую версию"}}
+
+Пользователь: "логи" / "покажи логи"
+{{"actions": [{{"module": "admin", "command": "logs"}}], "comment": "Последние логи системы"}}"""
 
     async def process(self, user_input: str):
         """Главная функция — человек говорит, Claude думает, модули делают"""

@@ -36,6 +36,7 @@ from modules.ingest import IngestModule
 from modules.utils import UtilsModule
 from modules.alice import AliceModule
 from modules.yadisk import YaDiskModule
+from modules.admin import AdminModule
 
 bus = SystemBus()
 modules = [FilesModule(), ProcessesModule(), SystemInfoModule(), NetworkModule(), DesignerModule(), PlatformModule(), VersionsModule(), ScannerModule(), SoftwareModule()]
@@ -64,6 +65,8 @@ alice = AliceModule(bus=bus, brain=brain)
 bus.register(alice)
 yadisk = YaDiskModule(bus=bus)
 bus.register(yadisk)
+admin = AdminModule(bus=bus)
+bus.register(admin)
 
 # Hook learner into brain processing
 _orig_process = brain.process
@@ -723,6 +726,14 @@ function appsPanel(){
     {name:'Scheduler',icon:'\u23F0',cls:'folder-text',tools:[
       {i:'\u23F0',n:'Tasks',c:'scheduler.list'},
       {i:'\u2795',n:'Add',c:'ask:Task command|ask:Interval (min)|scheduler.add command=$ interval=$'},
+    ]},
+    {name:'Admin',icon:'\u{1F6E0}',cls:'folder-system',tools:[
+      {i:'\u{1F504}',n:'Update',c:'admin.update'},
+      {i:'\u{1F4CA}',n:'Status',c:'admin.status'},
+      {i:'\u{1F4DC}',n:'Logs',c:'admin.logs'},
+      {i:'\u{1F3F7}',n:'Version',c:'admin.version'},
+      {i:'\u2318',n:'Shell',c:'ask:Command|admin.shell command=$'},
+      {i:'\u{1F4CB}',n:'Deploy Log',c:'admin.deploy_log'},
     ]},
     {name:'Software',icon:'\u{1F4E6}',cls:'folder-system',tools:[
       {i:'\u{1F4E6}',n:'Installed',c:'software.list'},
