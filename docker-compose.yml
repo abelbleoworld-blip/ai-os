@@ -8,6 +8,10 @@ services:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - AIOS_MODEL=${AIOS_MODEL:-claude-haiku-4-5-20251001}
       - OPENROUTER_BASE_URL=${OPENROUTER_BASE_URL:-https://openrouter.ai}
+      - MESH_ROLE=${MESH_ROLE:-hub}
+      - MESH_NODE_NAME=${MESH_NODE_NAME:-}
+      - MESH_HUB_URL=${MESH_HUB_URL:-}
+      - MESH_SECRET=${MESH_SECRET:-aios-mesh-2026}
     volumes:
       - aios-memory:/app/memory
       - aios-logs:/app/logs

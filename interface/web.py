@@ -26,6 +26,7 @@ from modules.versions import VersionsModule
 from modules.scanner import ScannerModule
 from modules.scheduler import SchedulerModule
 from modules.software import SoftwareModule
+from modules.mesh import MeshModule
 from ai.brain import Brain
 from ai.claude_brain import ClaudeBrain
 from ai.trainer import AutoTrainer
@@ -38,6 +39,8 @@ watchdog = WatchdogModule(bus=bus)
 bus.register(watchdog)
 scheduler = SchedulerModule(bus=bus)
 bus.register(scheduler)
+mesh = MeshModule(bus=bus)
+bus.register(mesh)
 base_brain = Brain(bus)
 trainer = AutoTrainer(base_brain)
 base_brain.trainer = trainer
@@ -128,6 +131,51 @@ async def api_upload(file: UploadFile = File(...)):
             pass
     result = await brain.process(f"Загружен файл: {file.filename}, размер: {size} байт, путь: {save_path}")
     return {"filename": file.filename, "size": size, "path": save_path, "analysis": analysis, "ai_response": result}
+
+# --- Mesh API (связь между нодами) ---
+
+@app.get("/mesh/nodes")
+async def mesh_nodes():
+    return await mesh.cmd_nodes()
+
+@app.get("/mesh/status")
+async def mesh_status():
+    return await mesh.cmd_status()
+
+@app.post("/mesh/register")
+async def mesh_register(data: dict):
+    if data.get("secret") != mesh.secret:
+        return {"error": "wrong secret"}
+    return mesh.hub_register(data)
+
+@app.post("/mesh/heartbeat")
+async def mesh_heartbeat(data: dict):
+    if data.get("secret") != mesh.secret:
+        return {"error": "wrong secret"}
+    return mesh.hub_heartbeat(data)
+
+@app.post("/mesh/command")
+async def mesh_command(data: dict):
+    """Отправить команду на конкретную ноду"""
+    node = data.get("node", "")
+    module = data.get("module", "")
+    command = data.get("command", "")
+    args = data.get("args", {})
+    if not node or not module or not command:
+        return {"error": "need node, module, command"}
+    return await mesh.hub_send_to_node(node, module, command, **args)
+
+@app.post("/mesh/execute")
+async def mesh_execute(data: dict):
+    """Агент выполняет команду от хаба"""
+    if data.get("secret") != mesh.secret:
+        return {"error": "wrong secret"}
+    module = data.get("module", "")
+    command = data.get("command", "")
+    args = data.get("args", {})
+    return await bus.send(module, command, **args)
+
+# --- Skills & Knowledge ---
 
 @app.get("/api/skills")
 async def api_skills():
