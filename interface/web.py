@@ -733,6 +733,83 @@ init();
 </script>
 </body></html>"""
 
+def _format_result(result):
+    """Превратить результат модулей в человеко-читаемый текст"""
+    if isinstance(result, str):
+        return result
+
+    if isinstance(result, dict):
+        # Ответ с comment + results (от ClaudeBrain)
+        comment = result.get("comment", "")
+        results = result.get("results", [])
+
+        if comment or results:
+            parts = []
+            if comment:
+                parts.append(comment)
+            for r in results:
+                if isinstance(r, dict):
+                    module = r.get("module", r.get("target", ""))
+                    command = r.get("command", "")
+                    inner = r.get("result", r)
+
+                    if module or command:
+                        parts.append(f"\n--- {module}.{command} ---")
+
+                    # Извлечь вложенный result
+                    if isinstance(inner, dict):
+                        ok = inner.get("ok")
+                        data = inner.get("result", inner)
+                        if isinstance(data, dict):
+                            for k, v in data.items():
+                                if k in ("ok", "_score"):
+                                    continue
+                                if isinstance(v, (dict, list)):
+                                    parts.append(f"{k}: {json.dumps(v, ensure_ascii=False, default=str)}")
+                                else:
+                                    parts.append(f"{k}: {v}")
+                        elif isinstance(data, list):
+                            for item in data[:15]:
+                                if isinstance(item, dict):
+                                    line = " | ".join(f"{k}: {v}" for k, v in item.items() if k not in ("ok", "_score"))
+                                    parts.append(f"  {line}")
+                                else:
+                                    parts.append(f"  {item}")
+                        elif isinstance(data, str):
+                            parts.append(data)
+                        else:
+                            parts.append(str(data))
+                    elif isinstance(inner, str):
+                        parts.append(inner)
+                    else:
+                        parts.append(str(inner))
+                elif isinstance(r, str):
+                    parts.append(r)
+
+            return "\n".join(parts) if parts else json.dumps(result, ensure_ascii=False, indent=2, default=str)
+
+        # Простой dict без comment/results
+        parts = []
+        for k, v in result.items():
+            if isinstance(v, (dict, list)):
+                parts.append(f"{k}: {json.dumps(v, ensure_ascii=False, default=str)}")
+            else:
+                parts.append(f"{k}: {v}")
+        return "\n".join(parts)
+
+    if isinstance(result, list):
+        parts = []
+        for item in result[:20]:
+            if isinstance(item, dict):
+                line = " | ".join(f"{k}: {v}" for k, v in item.items())
+                parts.append(line)
+            else:
+                parts.append(str(item))
+        return "\n".join(parts)
+
+    return str(result)
+
+
 # --- WebSocket endpoint ---
 
 @app.websocket("/ws")
@@ -760,7 +837,7 @@ async def websocket_chat(ws: WebSocket):
                 continue
             try:
                 result = await brain.process(user_input)
-                text = result if isinstance(result, str) else json.dumps(result, ensure_ascii=False, indent=2, default=str)
+                text = _format_result(result)
                 await ws.send_json({"type": "response", "input": user_input, "text": text})
             except Exception as e:
                 await ws.send_json({"type": "error", "text": f"Ошибка: {e}"})
