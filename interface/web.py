@@ -12,8 +12,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from core.bus import SystemBus
 from modules.files import FilesModule
 from modules.processes import ProcessesModule
@@ -74,6 +75,10 @@ app = FastAPI(title="AI-OS", lifespan=lifespan)
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard():
+    static_dir = Path(__file__).parent / "static"
+    index_file = static_dir / "index.html"
+    if index_file.exists():
+        return HTMLResponse(index_file.read_text(encoding="utf-8"))
     return DASHBOARD_HTML
 
 @app.get("/api/status")
@@ -739,3 +744,119 @@ function togMic(){
 init();
 </script>
 </body></html>"""
+
+def _format_result(result):
+    """Превратить результат модулей в человеко-читаемый текст"""
+    if isinstance(result, str):
+        return result
+
+    if isinstance(result, dict):
+        # Ответ с comment + results (от ClaudeBrain)
+        comment = result.get("comment", "")
+        results = result.get("results", [])
+
+        if comment or results:
+            parts = []
+            if comment:
+                parts.append(comment)
+            for r in results:
+                if isinstance(r, dict):
+                    module = r.get("module", r.get("target", ""))
+                    command = r.get("command", "")
+                    inner = r.get("result", r)
+
+                    if module or command:
+                        parts.append(f"\n--- {module}.{command} ---")
+
+                    # Извлечь вложенный result
+                    if isinstance(inner, dict):
+                        ok = inner.get("ok")
+                        data = inner.get("result", inner)
+                        if isinstance(data, dict):
+                            for k, v in data.items():
+                                if k in ("ok", "_score"):
+                                    continue
+                                if isinstance(v, (dict, list)):
+                                    parts.append(f"{k}: {json.dumps(v, ensure_ascii=False, default=str)}")
+                                else:
+                                    parts.append(f"{k}: {v}")
+                        elif isinstance(data, list):
+                            for item in data[:15]:
+                                if isinstance(item, dict):
+                                    line = " | ".join(f"{k}: {v}" for k, v in item.items() if k not in ("ok", "_score"))
+                                    parts.append(f"  {line}")
+                                else:
+                                    parts.append(f"  {item}")
+                        elif isinstance(data, str):
+                            parts.append(data)
+                        else:
+                            parts.append(str(data))
+                    elif isinstance(inner, str):
+                        parts.append(inner)
+                    else:
+                        parts.append(str(inner))
+                elif isinstance(r, str):
+                    parts.append(r)
+
+            return "\n".join(parts) if parts else json.dumps(result, ensure_ascii=False, indent=2, default=str)
+
+        # Простой dict без comment/results
+        parts = []
+        for k, v in result.items():
+            if isinstance(v, (dict, list)):
+                parts.append(f"{k}: {json.dumps(v, ensure_ascii=False, default=str)}")
+            else:
+                parts.append(f"{k}: {v}")
+        return "\n".join(parts)
+
+    if isinstance(result, list):
+        parts = []
+        for item in result[:20]:
+            if isinstance(item, dict):
+                line = " | ".join(f"{k}: {v}" for k, v in item.items())
+                parts.append(line)
+            else:
+                parts.append(str(item))
+        return "\n".join(parts)
+
+    return str(result)
+
+
+# --- WebSocket endpoint ---
+
+@app.websocket("/ws")
+async def websocket_chat(ws: WebSocket):
+    await ws.accept()
+    # Send welcome + module status
+    modules_info = bus.list_modules()
+    module_list = []
+    for name, info in modules_info.items():
+        icon = "+" if info["status"] == "running" else "-"
+        module_list.append(f"[{icon}] {name}: {info['description']}")
+    await ws.send_json({
+        "type": "system",
+        "text": "AI-OS v0.1 — Модульная ИИ-система\n\n" + "\n".join(module_list) + "\n\nГотов к работе."
+    })
+    try:
+        while True:
+            data = await ws.receive_text()
+            try:
+                msg = json.loads(data)
+                user_input = msg.get("input", "").strip()
+            except json.JSONDecodeError:
+                user_input = data.strip()
+            if not user_input:
+                continue
+            try:
+                result = await brain.process(user_input)
+                text = _format_result(result)
+                await ws.send_json({"type": "response", "input": user_input, "text": text})
+            except Exception as e:
+                await ws.send_json({"type": "error", "text": f"Ошибка: {e}"})
+    except WebSocketDisconnect:
+        pass
+
+# Static files
+_static_dir = Path(__file__).parent / "static"
+if _static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
