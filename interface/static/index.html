@@ -1,269 +1,1497 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI-OS</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI-OS</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-        :root {
-            --bg: #0a0a0f;
-            --surface: #12121a;
-            --border: #1e1e2e;
-            --text: #e0e0e0;
-            --text-dim: #888;
-            --accent: #6c5ce7;
-            --accent-glow: rgba(108, 92, 231, 0.3);
-            --green: #00b894;
-            --red: #e17055;
-            --yellow: #fdcb6e;
-        }
+    :root {
+      --bg:           #0A0A0A;
+      --glass:        rgba(255,255,255,0.06);
+      --glass-hover:  rgba(255,255,255,0.10);
+      --border:       rgba(255,255,255,0.08);
+      --border-hover: rgba(255,255,255,0.16);
+      --text:         #F5F5F5;
+      --text-dim:     #9A9A9A;
+      --accent:       #6366F1;
+      --accent-dim:   rgba(99,102,241,0.18);
+      --accent-glow:  rgba(99,102,241,0.35);
+      --green:        #22C55E;
+      --green-dim:    rgba(34,197,94,0.18);
+      --amber:        #F59E0B;
+      --amber-dim:    rgba(245,158,11,0.18);
+      --red:          #EF4444;
+      --red-dim:      rgba(239,68,68,0.18);
+      --radius:       14px;
+      --radius-sm:    8px;
+      --blur:         20px;
+    }
 
-        body {
-            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-            background: var(--bg);
-            color: var(--text);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
 
-        /* Header */
-        .header {
-            padding: 12px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: var(--surface);
-        }
+    /* ─── Layout ─── */
+    #app {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
 
-        .header h1 {
-            font-size: 16px;
-            font-weight: 600;
-            background: linear-gradient(135deg, var(--accent), #a29bfe);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+    /* ─── Top status bar ─── */
+    #topbar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(10,10,10,0.85);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+      z-index: 100;
+      gap: 12px;
+    }
 
-        .status-dot {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            background: var(--red);
-        }
+    #topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
 
-        .status-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    #logo {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    #logo span { color: var(--accent); }
 
-        .status-text { font-size: 11px; color: var(--text-dim); }
+    #session-badge {
+      font-size: 11px;
+      color: var(--text-dim);
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2px 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+    }
 
-        /* Chat */
-        .chat {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
+    #topbar-center {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
 
-        .msg {
-            max-width: 85%;
-            padding: 10px 14px;
-            border-radius: 12px;
-            font-size: 13px;
-            line-height: 1.5;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
+    .state-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      letter-spacing: 0.2px;
+    }
+    .state-pill:hover { filter: brightness(1.15); transform: translateY(-1px); }
+    .state-pill.ok      { background: var(--green-dim); border-color: rgba(34,197,94,0.3);  color: var(--green); }
+    .state-pill.warn    { background: var(--amber-dim); border-color: rgba(245,158,11,0.3); color: var(--amber); }
+    .state-pill.crit    { background: var(--red-dim);   border-color: rgba(239,68,68,0.3);  color: var(--red);   }
+    .state-pill.active.ok   { background: var(--green); color: #000; border-color: var(--green); }
+    .state-pill.active.warn { background: var(--amber); color: #000; border-color: var(--amber); }
+    .state-pill.active.crit { background: var(--red);   color: #fff; border-color: var(--red);   }
 
-        .msg.system {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            color: var(--text-dim);
-            align-self: center;
-            max-width: 90%;
-            text-align: center;
-        }
+    #topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
 
-        .msg.user {
-            background: var(--accent);
-            color: white;
-            align-self: flex-end;
-            border-bottom-right-radius: 4px;
-        }
+    #clock {
+      font-size: 12px;
+      color: var(--text-dim);
+      text-align: right;
+      white-space: nowrap;
+      line-height: 1.3;
+    }
+    #clock .time { font-weight: 600; color: var(--text); font-size: 14px; }
 
-        .msg.response {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            align-self: flex-start;
-            border-bottom-left-radius: 4px;
-        }
+    #dot-indicators {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      transition: all 0.4s ease;
+      position: relative;
+    }
+    .dot.white  { background: var(--text); box-shadow: 0 0 6px rgba(255,255,255,0.4); }
+    .dot.orange { background: var(--amber); box-shadow: 0 0 8px rgba(245,158,11,0.6); }
+    .dot.red    { background: var(--red); box-shadow: 0 0 8px rgba(239,68,68,0.6); animation: pulse-red 2s infinite; }
+    .dot.dim    { background: rgba(255,255,255,0.15); box-shadow: none; }
 
-        .msg.error {
-            background: rgba(225, 112, 85, 0.1);
-            border: 1px solid var(--red);
-            color: var(--red);
-            align-self: flex-start;
-        }
+    @keyframes pulse-red {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
 
-        .msg .label {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 4px;
-            opacity: 0.6;
-        }
+    #ws-status {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      transition: background 0.3s;
+      flex-shrink: 0;
+    }
+    #ws-status.connected    { background: var(--green); box-shadow: 0 0 6px rgba(34,197,94,0.5); }
+    #ws-status.connecting   { background: var(--amber); animation: blink 1s infinite; }
+    #ws-status.disconnected { background: var(--red); }
 
-        /* Input */
-        .input-area {
-            padding: 12px 20px;
-            border-top: 1px solid var(--border);
-            background: var(--surface);
-            display: flex;
-            gap: 8px;
-        }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-        .input-area input {
-            flex: 1;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px 14px;
-            color: var(--text);
-            font-family: inherit;
-            font-size: 13px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
+    /* ─── Chat area ─── */
+    #chat-wrap {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 20px 0 8px;
+      scroll-behavior: smooth;
+    }
+    #chat-wrap::-webkit-scrollbar { width: 4px; }
+    #chat-wrap::-webkit-scrollbar-track { background: transparent; }
+    #chat-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+    #chat-wrap::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
-        .input-area input:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 2px var(--accent-glow);
-        }
+    #messages {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
 
-        .input-area button {
-            background: var(--accent);
-            border: none;
-            border-radius: 8px;
-            padding: 10px 20px;
-            color: white;
-            font-family: inherit;
-            font-size: 13px;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
+    /* ─── Message bubbles ─── */
+    .msg {
+      display: flex;
+      flex-direction: column;
+      animation: msgIn 0.25s ease forwards;
+      max-width: 100%;
+    }
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
 
-        .input-area button:hover { opacity: 0.85; }
-        .input-area button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .msg.user  { align-items: flex-end; }
+    .msg.ai    { align-items: flex-start; }
+    .msg.system { align-items: center; }
 
-        /* Scrollbar */
-        .chat::-webkit-scrollbar { width: 6px; }
-        .chat::-webkit-scrollbar-track { background: transparent; }
-        .chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .msg-bubble {
+      max-width: min(680px, 88%);
+      padding: 11px 15px;
+      border-radius: var(--radius);
+      font-size: 14.5px;
+      line-height: 1.6;
+      word-break: break-word;
+    }
+    .msg.user .msg-bubble {
+      background: var(--accent);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .msg.ai .msg-bubble {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .msg.system .msg-bubble {
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 12px;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+    }
 
-        /* Typing indicator */
-        .typing { display: none; align-self: flex-start; padding: 8px 14px; }
-        .typing.show { display: flex; gap: 4px; align-items: center; }
-        .typing span {
-            width: 6px; height: 6px;
-            background: var(--text-dim);
-            border-radius: 50%;
-            animation: blink 1.4s infinite;
-        }
-        .typing span:nth-child(2) { animation-delay: 0.2s; }
-        .typing span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes blink { 0%, 80%, 100% { opacity: 0.3; } 40% { opacity: 1; } }
+    .msg-meta {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 3px;
+      padding: 0 4px;
+    }
 
-        @media (max-width: 600px) {
-            .msg { max-width: 95%; }
-            .header h1 { font-size: 14px; }
-        }
-    </style>
+    /* ─── Typing indicator ─── */
+    #typing-indicator {
+      display: none;
+      align-items: flex-start;
+      padding: 0 16px;
+      max-width: 820px;
+      margin: 4px auto 0;
+    }
+    #typing-indicator.visible { display: flex; }
+    .typing-bubble {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      border-bottom-left-radius: 4px;
+      padding: 11px 16px;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .typing-dot {
+      width: 6px; height: 6px;
+      background: var(--text-dim);
+      border-radius: 50%;
+      animation: typingPulse 1.2s ease infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingPulse {
+      0%,80%,100% { transform: scale(0.7); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* ─── Rich AI content inside bubbles ─── */
+    .ai-text { white-space: pre-wrap; }
+    .ai-text p { margin-bottom: 6px; }
+    .ai-text p:last-child { margin-bottom: 0; }
+    .ai-text strong { color: var(--text); }
+    .ai-text code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12.5px;
+      background: rgba(255,255,255,0.08);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+    .ai-text pre {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      overflow-x: auto;
+      margin: 8px 0;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+    .ai-text pre::-webkit-scrollbar { height: 3px; }
+    .ai-text pre::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+
+    /* ─── Data cards inside messages ─── */
+    .data-card {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin: 8px 0;
+    }
+    .data-card-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+    .data-card table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .data-card td {
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .data-card td:first-child { color: var(--text-dim); padding-right: 16px; }
+    .data-card td:last-child  { color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
+    .data-card tr:last-child td { border-bottom: none; }
+
+    /* Progress bar in data card */
+    .prog-bar {
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .prog-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    /* Action button inside AI message */
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      margin-right: 6px;
+      padding: 7px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+    }
+    .action-btn.primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .action-btn.primary:hover { background: #7577f3; transform: translateY(-1px); box-shadow: 0 4px 16px var(--accent-glow); }
+    .action-btn.secondary {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .action-btn.secondary:hover { background: var(--glass-hover); transform: translateY(-1px); }
+    .action-btn.danger {
+      background: var(--red-dim);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: var(--red);
+    }
+    .action-btn.danger:hover { background: var(--red); color: #fff; }
+
+    /* ─── Module cards grid (bottom) ─── */
+    #modules-bar {
+      flex-shrink: 0;
+      padding: 8px 16px 6px;
+      border-top: 1px solid var(--border);
+      background: rgba(10,10,10,0.8);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+    }
+
+    #modules-grid {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      max-width: 820px;
+      margin: 0 auto;
+      padding-bottom: 2px;
+    }
+    #modules-grid::-webkit-scrollbar { display: none; }
+
+    .module-card {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 12px;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 72px;
+      position: relative;
+      overflow: hidden;
+    }
+    .module-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--glass-hover);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .module-card:hover::before { opacity: 1; }
+    .module-card:hover { border-color: var(--border-hover); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .module-card:active { transform: translateY(0); }
+
+    .module-icon { font-size: 18px; line-height: 1; }
+    .module-name { font-size: 10px; color: var(--text-dim); white-space: nowrap; }
+    .module-val  { font-size: 12px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+
+    .module-card .status-dot {
+      position: absolute;
+      top: 5px; right: 5px;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+    .module-card.warn .status-dot { background: var(--amber); }
+    .module-card.crit .status-dot { background: var(--red); animation: pulse-red 2s infinite; }
+
+    /* ─── Input bar ─── */
+    #input-bar {
+      flex-shrink: 0;
+      padding: 8px 16px 12px;
+      background: rgba(10,10,10,0.9);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+    }
+
+    #input-inner {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      max-width: 820px;
+      margin: 0 auto;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 6px 6px 14px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    #input-inner:focus-within {
+      border-color: rgba(99,102,241,0.5);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    #msg-input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 14.5px;
+      font-family: inherit;
+      line-height: 1.5;
+      resize: none;
+      max-height: 120px;
+      overflow-y: auto;
+      padding: 5px 0;
+    }
+    #msg-input::placeholder { color: var(--text-dim); }
+    #msg-input::-webkit-scrollbar { width: 3px; }
+    #msg-input::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+    .input-btn {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: var(--glass);
+      color: var(--text-dim);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+      font-size: 16px;
+    }
+    .input-btn:hover { background: var(--glass-hover); color: var(--text); transform: scale(1.05); }
+    .input-btn:active { transform: scale(0.95); }
+
+    #send-btn {
+      background: var(--accent);
+      color: #fff;
+    }
+    #send-btn:hover { background: #7577f3; box-shadow: 0 0 16px var(--accent-glow); }
+    #send-btn:disabled { background: rgba(99,102,241,0.3); color: rgba(255,255,255,0.4); cursor: not-allowed; transform: none; box-shadow: none; }
+
+    #mic-btn.recording {
+      background: var(--red);
+      color: #fff;
+      animation: pulse-red 1s infinite;
+    }
+
+    /* Upload overlay */
+    #upload-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    #upload-overlay.visible { display: flex; }
+    .upload-zone {
+      background: var(--glass);
+      border: 2px dashed var(--accent);
+      border-radius: var(--radius);
+      padding: 60px 80px;
+      text-align: center;
+      color: var(--text);
+    }
+    .upload-zone p { margin-top: 12px; color: var(--text-dim); font-size: 14px; }
+
+    /* ─── Toast notifications ─── */
+    #toast-container {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 500;
+      pointer-events: none;
+      align-items: center;
+    }
+    .toast {
+      background: rgba(20,20,20,0.95);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 8px 18px;
+      font-size: 13px;
+      color: var(--text);
+      animation: toastIn 0.2s ease, toastOut 0.3s ease 2.5s forwards;
+      backdrop-filter: blur(10px);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .toast.ok   { border-color: rgba(34,197,94,0.4);  color: var(--green); }
+    .toast.warn { border-color: rgba(245,158,11,0.4); color: var(--amber); }
+    .toast.err  { border-color: rgba(239,68,68,0.4);  color: var(--red); }
+    @keyframes toastIn  { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes toastOut { from { opacity:1; } to { opacity:0; } }
+
+    /* ─── Drag-drop highlight ─── */
+    body.drag-over #app { outline: 2px dashed var(--accent); outline-offset: -4px; border-radius: var(--radius); }
+
+    /* ─── Scrollbar fill indicator ─── */
+    .usage-bar {
+      display: inline-block;
+      width: 36px; height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 4px;
+      overflow: hidden;
+      vertical-align: middle;
+    }
+    .usage-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+
+    /* ─── Mobile ─── */
+    @media (max-width: 600px) {
+      #topbar { padding: 8px 12px; }
+      #session-badge { display: none; }
+      #topbar-center { gap: 4px; }
+      .state-pill { padding: 3px 8px; font-size: 10px; }
+      #messages { padding: 0 10px; }
+      #modules-bar { padding: 6px 10px 4px; }
+      #input-bar { padding: 6px 10px 10px; }
+      .module-card { min-width: 62px; padding: 7px 8px; }
+      .module-name { font-size: 9px; }
+    }
+
+    /* ─── Welcome screen ─── */
+    #welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 16px;
+      color: var(--text-dim);
+      font-size: 14px;
+      pointer-events: none;
+      user-select: none;
+      padding-bottom: 20px;
+    }
+    #welcome .welcome-logo {
+      font-size: 40px;
+      opacity: 0.5;
+    }
+    #welcome h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+      opacity: 0.7;
+    }
+    #welcome p { opacity: 0.5; text-align: center; max-width: 300px; line-height: 1.6; }
+    #welcome .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 4px;
+      pointer-events: all;
+    }
+    .suggestion-chip {
+      padding: 6px 14px;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 13px;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .suggestion-chip:hover { background: var(--glass-hover); border-color: var(--border-hover); color: var(--text); transform: translateY(-1px); }
+  </style>
 </head>
 <body>
-    <div class="header">
-        <div class="status-dot" id="statusDot"></div>
-        <h1>AI-OS</h1>
-        <span class="status-text" id="statusText">connecting...</span>
+
+<div id="app">
+
+  <!-- Top bar -->
+  <header id="topbar">
+    <div id="topbar-left">
+      <div id="logo">AI<span>·</span>OS</div>
+      <div id="session-badge">Загрузка...</div>
     </div>
 
-    <div class="chat" id="chat">
-        <div class="typing" id="typing"><span></span><span></span><span></span></div>
+    <div id="topbar-center">
+      <button class="state-pill ok active" data-state="ok" onclick="filterByState('ok')">Спокойное</button>
+      <button class="state-pill warn" data-state="warn" onclick="filterByState('warn')">Предупреждение</button>
+      <button class="state-pill crit" data-state="crit" onclick="filterByState('crit')">Проблема</button>
     </div>
 
-    <div class="input-area">
-        <input type="text" id="input" placeholder="Введи команду или вопрос..." autocomplete="off" disabled>
-        <button id="send" disabled>Send</button>
+    <div id="topbar-right">
+      <div id="clock">
+        <div class="time" id="clock-time">00:00</div>
+        <div id="clock-date" style="font-size:10px;text-align:right"></div>
+      </div>
+      <div id="dot-indicators">
+        <div class="dot dim" id="dot-green" title="Норма"></div>
+        <div class="dot dim" id="dot-orange" title="Предупреждение"></div>
+        <div class="dot dim" id="dot-red" title="Критично"></div>
+      </div>
+      <div id="ws-status" title="WebSocket"></div>
+    </div>
+  </header>
+
+  <!-- Chat area -->
+  <div id="chat-wrap">
+    <div id="messages">
+
+      <!-- Welcome shown when no messages -->
+      <div id="welcome">
+        <div class="welcome-logo">🤖</div>
+        <h2>Привет! Я AI-OS</h2>
+        <p>Управляй своей системой голосом и текстом. Спроси о чём угодно.</p>
+        <div class="suggestions">
+          <div class="suggestion-chip" onclick="sendSuggestion('Как дела с системой?')">Как дела с системой?</div>
+          <div class="suggestion-chip" onclick="sendSuggestion('Покажи использование памяти')">Использование памяти</div>
+          <div class="suggestion-chip" onclick="sendSuggestion('Список процессов')">Список процессов</div>
+          <div class="suggestion-chip" onclick="sendSuggestion('Состояние дисков')">Состояние дисков</div>
+          <div class="suggestion-chip" onclick="sendSuggestion('Проверь здоровье системы')">Проверь здоровье</div>
+        </div>
+      </div>
+
     </div>
 
-    <script>
-        const chat = document.getElementById('chat');
-        const input = document.getElementById('input');
-        const sendBtn = document.getElementById('send');
-        const statusDot = document.getElementById('statusDot');
-        const statusText = document.getElementById('statusText');
-        const typing = document.getElementById('typing');
+    <!-- Typing indicator, outside #messages but same width -->
+    <div id="typing-indicator">
+      <div class="typing-bubble">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    </div>
+  </div>
 
-        let ws = null;
-        let reconnectTimer = null;
+  <!-- Module cards -->
+  <div id="modules-bar">
+    <div id="modules-grid">
+      <div class="module-card" data-cmd="файлы" onclick="moduleClick(this)">
+        <div class="status-dot"></div>
+        <div class="module-icon">📁</div>
+        <div class="module-name">Файлы</div>
+        <div class="module-val" id="mod-files">—</div>
+      </div>
+      <div class="module-card" data-cmd="список процессов" onclick="moduleClick(this)">
+        <div class="status-dot"></div>
+        <div class="module-icon">⚙️</div>
+        <div class="module-name">Процессы</div>
+        <div class="module-val" id="mod-procs">—</div>
+      </div>
+      <div class="module-card" data-cmd="сеть" onclick="moduleClick(this)">
+        <div class="status-dot"></div>
+        <div class="module-icon">🌐</div>
+        <div class="module-name">Сеть</div>
+        <div class="module-val" id="mod-net">—</div>
+      </div>
+      <div class="module-card" data-cmd="проверь здоровье системы" onclick="moduleClick(this)">
+        <div class="status-dot"></div>
+        <div class="module-icon">💊</div>
+        <div class="module-name">Здоровье</div>
+        <div class="module-val" id="mod-health">—</div>
+      </div>
+      <div class="module-card" data-cmd="использование памяти" onclick="moduleClick(this)">
+        <div class="status-dot"></div>
+        <div class="module-icon">🧠</div>
+        <div class="module-name">Память</div>
+        <div class="module-val" id="mod-mem">—</div>
+      </div>
+      <div class="module-card" data-cmd="загрузка CPU" onclick="moduleClick(this)">
+        <div class="status-dot"></div>
+        <div class="module-icon">📊</div>
+        <div class="module-name">CPU</div>
+        <div class="module-val" id="mod-cpu">—</div>
+      </div>
+      <div class="module-card" data-cmd="диски" onclick="moduleClick(this)">
+        <div class="status-dot"></div>
+        <div class="module-icon">💾</div>
+        <div class="module-name">Диски</div>
+        <div class="module-val" id="mod-disks">—</div>
+      </div>
+    </div>
+  </div>
 
-        function connect() {
-            const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-            ws = new WebSocket(`${proto}://${location.host}/ws`);
+  <!-- Input bar -->
+  <div id="input-bar">
+    <div id="input-inner">
+      <textarea
+        id="msg-input"
+        rows="1"
+        placeholder="Напиши сообщение или задай вопрос..."
+        onkeydown="inputKeydown(event)"
+        oninput="autoResize(this)"
+      ></textarea>
+      <button class="input-btn" id="upload-btn" onclick="triggerUpload()" title="Загрузить файл">📎</button>
+      <button class="input-btn" id="mic-btn" onclick="toggleMic()" title="Голосовой ввод">🎙️</button>
+      <button class="input-btn" id="send-btn" onclick="sendMessage()" title="Отправить">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
 
-            ws.onopen = () => {
-                statusDot.classList.add('connected');
-                statusText.textContent = 'connected';
-                input.disabled = false;
-                sendBtn.disabled = false;
-                input.focus();
-            };
+</div>
 
-            ws.onmessage = (e) => {
-                typing.classList.remove('show');
-                sendBtn.disabled = false;
-                const msg = JSON.parse(e.data);
-                addMessage(msg.type || 'response', msg.text || JSON.stringify(msg));
-            };
+<!-- Hidden file input -->
+<input type="file" id="file-input" style="display:none" onchange="handleFileUpload(event)">
 
-            ws.onclose = () => {
-                statusDot.classList.remove('connected');
-                statusText.textContent = 'disconnected — reconnecting...';
-                input.disabled = true;
-                sendBtn.disabled = true;
-                reconnectTimer = setTimeout(connect, 3000);
-            };
+<!-- Upload drag-drop overlay -->
+<div id="upload-overlay" onclick="closeUploadOverlay()">
+  <div class="upload-zone" onclick="event.stopPropagation()">
+    <div style="font-size:48px">📂</div>
+    <h3>Перетащи файл сюда</h3>
+    <p>или нажми, чтобы выбрать</p>
+    <label style="margin-top:16px;display:inline-block;cursor:pointer">
+      <input type="file" style="display:none" onchange="handleFileUpload(event)">
+      <span class="action-btn secondary" style="pointer-events:none">Выбрать файл</span>
+    </label>
+  </div>
+</div>
 
-            ws.onerror = () => ws.close();
-        }
+<!-- Toast container -->
+<div id="toast-container"></div>
 
-        function addMessage(type, text) {
-            const div = document.createElement('div');
-            div.className = `msg ${type}`;
-            div.textContent = text;
-            chat.insertBefore(div, typing);
-            chat.scrollTop = chat.scrollHeight;
-        }
+<script>
+/* ────────────────────────────────────────────────
+   State
+──────────────────────────────────────────────── */
+let ws = null;
+let wsReconnectDelay = 1000;
+let wsReconnecting = false;
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+let messageCount = 0;
+let currentSystemState = 'ok'; // ok | warn | crit
+let lastHealthData = null;
 
-        function send() {
-            const text = input.value.trim();
-            if (!text || !ws || ws.readyState !== 1) return;
+/* ────────────────────────────────────────────────
+   Clock
+──────────────────────────────────────────────── */
+function updateClock() {
+  const now = new Date();
+  const t = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const d = now.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', weekday: 'short' });
+  document.getElementById('clock-time').textContent = t;
+  document.getElementById('clock-date').textContent = d;
+}
+updateClock();
+setInterval(updateClock, 1000);
 
-            addMessage('user', text);
-            ws.send(JSON.stringify({ input: text }));
-            input.value = '';
-            typing.classList.add('show');
-            sendBtn.disabled = true;
-            chat.scrollTop = chat.scrollHeight;
-        }
+/* ────────────────────────────────────────────────
+   WebSocket
+──────────────────────────────────────────────── */
+function wsConnect() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const url   = `${proto}://${location.host}/ws`;
+  setWsStatus('connecting');
 
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') send();
-        });
-        sendBtn.addEventListener('click', send);
+  ws = new WebSocket(url);
 
-        connect();
-    </script>
+  ws.onopen = () => {
+    setWsStatus('connected');
+    wsReconnectDelay = 1000;
+    wsReconnecting = false;
+    showToast('Подключено к AI-OS', 'ok');
+  };
+
+  ws.onmessage = (ev) => {
+    try {
+      const data = JSON.parse(ev.data);
+      handleServerMessage(data);
+    } catch(e) {
+      console.warn('ws parse error', e);
+    }
+  };
+
+  ws.onclose = () => {
+    setWsStatus('disconnected');
+    if (!wsReconnecting) scheduleReconnect();
+  };
+
+  ws.onerror = () => {
+    setWsStatus('disconnected');
+  };
+}
+
+function scheduleReconnect() {
+  wsReconnecting = true;
+  showToast(`Переподключение через ${wsReconnectDelay/1000}с...`, 'warn');
+  setTimeout(() => {
+    wsReconnect();
+    wsReconnectDelay = Math.min(wsReconnectDelay * 2, 15000);
+  }, wsReconnectDelay);
+}
+
+function wsReconnect() {
+  if (ws) { try { ws.close(); } catch(e){} ws = null; }
+  wsConnect();
+}
+
+function setWsStatus(state) {
+  const el = document.getElementById('ws-status');
+  el.className = state;
+}
+
+function handleServerMessage(data) {
+  hideTyping();
+
+  if (data.type === 'response' || data.type === 'message') {
+    addAiMessage(data.text || data.result || JSON.stringify(data));
+  } else if (data.type === 'system') {
+    addSystemMessage(data.text || '');
+  } else if (data.type === 'error') {
+    addSystemMessage('⚠️ ' + (data.text || 'Ошибка'));
+  } else if (data.type === 'status') {
+    // status update from server
+    handleStatusUpdate(data);
+  } else {
+    // Unknown shape — render as AI
+    const text = data.text || data.result || data.message || JSON.stringify(data, null, 2);
+    addAiMessage(text);
+  }
+}
+
+/* ────────────────────────────────────────────────
+   Sending
+──────────────────────────────────────────────── */
+function sendMessage() {
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  addUserMessage(text);
+  input.value = '';
+  autoResize(input);
+  showTyping();
+
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ input: text }));
+  } else {
+    // REST fallback
+    fetch('/api/command', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command: text })
+    })
+    .then(r => r.json())
+    .then(data => {
+      hideTyping();
+      const reply = data.result || data.text || data.error || JSON.stringify(data);
+      addAiMessage(reply);
+    })
+    .catch(err => {
+      hideTyping();
+      addSystemMessage('❌ Ошибка: ' + err.message);
+    });
+  }
+}
+
+function sendSuggestion(text) {
+  document.getElementById('msg-input').value = text;
+  sendMessage();
+}
+
+function moduleClick(card) {
+  const cmd = card.dataset.cmd;
+  if (cmd) {
+    document.getElementById('msg-input').value = cmd;
+    sendMessage();
+  }
+}
+
+/* ────────────────────────────────────────────────
+   Message rendering
+──────────────────────────────────────────────── */
+function hideWelcome() {
+  const w = document.getElementById('welcome');
+  if (w) w.style.display = 'none';
+}
+
+function addUserMessage(text) {
+  hideWelcome();
+  messageCount++;
+  const wrap = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'msg user';
+  const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  el.innerHTML = `
+    <div class="msg-bubble">${escapeHtml(text)}</div>
+    <div class="msg-meta">${time}</div>
+  `;
+  wrap.appendChild(el);
+  scrollChat();
+}
+
+function addAiMessage(text) {
+  hideWelcome();
+  messageCount++;
+  const wrap = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'msg ai';
+  const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.innerHTML = renderAiContent(text);
+
+  el.appendChild(bubble);
+  const meta = document.createElement('div');
+  meta.className = 'msg-meta';
+  meta.textContent = time;
+  el.appendChild(meta);
+
+  wrap.appendChild(el);
+  scrollChat();
+}
+
+function addSystemMessage(text) {
+  const wrap = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'msg system';
+  el.innerHTML = `<div class="msg-bubble">${escapeHtml(text)}</div>`;
+  wrap.appendChild(el);
+  scrollChat();
+}
+
+function renderAiContent(text) {
+  // Try JSON first
+  if (typeof text === 'object') {
+    return renderJsonData(text);
+  }
+  const trimmed = (typeof text === 'string') ? text.trim() : String(text);
+
+  // Detect if it's JSON
+  if ((trimmed.startsWith('{') || trimmed.startsWith('[')) && trimmed.length < 8000) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      return renderJsonData(parsed);
+    } catch(e) { /* not json */ }
+  }
+
+  // Render as markdown-ish text
+  return `<div class="ai-text">${renderMarkdown(trimmed)}</div>`;
+}
+
+function renderJsonData(data) {
+  // Special known shapes
+  if (Array.isArray(data)) {
+    return renderTable(data);
+  }
+
+  // Health / status object
+  if (data.issues !== undefined || data.status !== undefined) {
+    return renderHealthCard(data);
+  }
+
+  // Generic key-value
+  return renderKeyValue(data);
+}
+
+function renderHealthCard(data) {
+  let html = '<div class="data-card">';
+  html += '<div class="data-card-title">Состояние системы</div>';
+
+  const status = data.status || (data.issues && data.issues.length ? 'warn' : 'ok');
+  const statusColor = status === 'ok' ? 'var(--green)' : status === 'warn' ? 'var(--amber)' : 'var(--red)';
+  const statusLabel = status === 'ok' ? '✓ Всё хорошо' : status === 'warn' ? '⚠ Предупреждения' : '✗ Проблемы';
+  html += `<div style="color:${statusColor};font-weight:600;margin-bottom:8px">${statusLabel}</div>`;
+
+  if (data.issues && data.issues.length) {
+    html += '<ul style="margin:0;padding-left:16px;color:var(--text-dim);font-size:13px">';
+    data.issues.forEach(i => {
+      const txt = typeof i === 'string' ? i : (i.message || i.text || JSON.stringify(i));
+      html += `<li style="margin-bottom:4px">${escapeHtml(txt)}</li>`;
+    });
+    html += '</ul>';
+
+    // Fix button
+    html += `<br><button class="action-btn primary" onclick="sendSuggestion('починить проблемы')">🔧 Починить одной кнопкой</button>`;
+    html += `<button class="action-btn secondary" onclick="sendSuggestion('подробнее о проблемах')">Подробнее</button>`;
+  }
+
+  // Add any extra keys
+  const skip = ['status','issues','ok','warnings','errors'];
+  const extras = Object.entries(data).filter(([k]) => !skip.includes(k));
+  if (extras.length) {
+    html += '<table style="margin-top:10px;width:100%;border-collapse:collapse;font-size:13px">';
+    extras.forEach(([k, v]) => {
+      if (typeof v === 'object') return;
+      html += `<tr><td style="color:var(--text-dim);padding:3px 0 3px 0;padding-right:16px">${escapeHtml(k)}</td><td style="text-align:right;color:var(--text)">${escapeHtml(String(v))}</td></tr>`;
+    });
+    html += '</table>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function renderTable(arr) {
+  if (!arr.length) return '<div class="data-card"><div class="data-card-title">Пустой список</div></div>';
+
+  const keys = Object.keys(arr[0]);
+  let html = '<div class="data-card" style="overflow-x:auto">';
+  html += '<table style="width:100%;border-collapse:collapse;font-size:12.5px">';
+  html += '<thead><tr>' + keys.map(k => `<th style="text-align:left;color:var(--text-dim);padding:4px 8px 6px 0;border-bottom:1px solid var(--border);font-weight:500;white-space:nowrap">${escapeHtml(k)}</th>`).join('') + '</tr></thead>';
+  html += '<tbody>';
+  arr.slice(0, 20).forEach(row => {
+    html += '<tr>';
+    keys.forEach(k => {
+      const val = row[k];
+      html += `<td style="padding:4px 8px 4px 0;border-bottom:1px solid rgba(255,255,255,0.03);color:var(--text);white-space:nowrap">${escapeHtml(String(val ?? '—'))}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  if (arr.length > 20) {
+    html += `<div style="color:var(--text-dim);font-size:11px;margin-top:6px">...и ещё ${arr.length - 20} строк</div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderKeyValue(obj, title) {
+  let html = '<div class="data-card">';
+  if (title) html += `<div class="data-card-title">${escapeHtml(title)}</div>`;
+  html += '<table style="width:100%;border-collapse:collapse">';
+
+  function renderValue(v) {
+    if (v === null || v === undefined) return '—';
+    if (typeof v === 'boolean') return v ? '✓' : '✗';
+    if (typeof v === 'number') {
+      // If looks like percent (0-100), show progress
+      if (v >= 0 && v <= 100) {
+        const color = v > 80 ? 'var(--red)' : v > 60 ? 'var(--amber)' : 'var(--green)';
+        return `${v}% <span class="usage-bar"><span class="usage-bar-fill" style="width:${v}%;background:${color}"></span></span>`;
+      }
+      return String(v);
+    }
+    if (typeof v === 'object' && !Array.isArray(v)) {
+      // Nested object - render inline
+      return Object.entries(v).map(([ik, iv]) => `<span style="color:var(--text-dim)">${escapeHtml(ik)}</span>: ${escapeHtml(String(iv ?? '—'))}`).join(', ');
+    }
+    if (Array.isArray(v)) return v.join(', ');
+    return escapeHtml(String(v));
+  }
+
+  Object.entries(obj).forEach(([k, v]) => {
+    if (typeof v === 'object' && v !== null && !Array.isArray(v) && Object.keys(v).length > 3) {
+      // Sub-section
+      html += `<tr><td colspan="2" style="padding-top:10px;padding-bottom:4px;color:var(--text-dim);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px">${escapeHtml(k)}</td></tr>`;
+      Object.entries(v).forEach(([sk, sv]) => {
+        html += `<tr>
+          <td style="color:var(--text-dim);padding:3px 0;padding-right:14px;font-size:13px;padding-left:10px">${escapeHtml(sk)}</td>
+          <td style="text-align:right;color:var(--text);font-size:13px">${renderValue(sv)}</td>
+        </tr>`;
+      });
+    } else {
+      html += `<tr>
+        <td style="color:var(--text-dim);padding:4px 0;padding-right:14px;font-size:13.5px">${escapeHtml(k)}</td>
+        <td style="text-align:right;color:var(--text);font-size:13.5px">${renderValue(v)}</td>
+      </tr>`;
+    }
+  });
+  html += '</table></div>';
+  return html;
+}
+
+function renderMarkdown(text) {
+  // Very lightweight markdown
+  let html = escapeHtml(text);
+
+  // Code blocks
+  html = html.replace(/```([\s\S]*?)```/g, (_, code) =>
+    `<pre><code>${code.trim()}</code></pre>`
+  );
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // Bold
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+  // Italic
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+  // Headers
+  html = html.replace(/^### (.+)$/gm, '<h4 style="margin:10px 0 4px;font-size:14px;color:var(--text)">$1</h4>');
+  html = html.replace(/^## (.+)$/gm, '<h3 style="margin:12px 0 5px;font-size:15px;color:var(--text)">$1</h3>');
+  html = html.replace(/^# (.+)$/gm, '<h2 style="margin:14px 0 6px;font-size:16px;color:var(--text)">$1</h2>');
+
+  // Lists
+  html = html.replace(/^[-*•] (.+)$/gm, '<li style="margin-left:14px;margin-bottom:2px">$1</li>');
+  html = html.replace(/(<li.*<\/li>\n?)+/g, m => `<ul style="margin:6px 0">${m}</ul>`);
+
+  // Numbers lists
+  html = html.replace(/^\d+\. (.+)$/gm, '<li style="margin-left:14px;margin-bottom:2px">$1</li>');
+
+  // Horizontal rule
+  html = html.replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:10px 0">');
+
+  // Line breaks
+  html = html.replace(/\n\n/g, '</p><p style="margin-bottom:6px">');
+  html = html.replace(/\n/g, '<br>');
+  html = `<p style="margin-bottom:0">${html}</p>`;
+
+  return html;
+}
+
+/* ────────────────────────────────────────────────
+   Typing indicator
+──────────────────────────────────────────────── */
+function showTyping() {
+  document.getElementById('typing-indicator').classList.add('visible');
+  scrollChat();
+}
+function hideTyping() {
+  document.getElementById('typing-indicator').classList.remove('visible');
+}
+
+/* ────────────────────────────────────────────────
+   Scroll
+──────────────────────────────────────────────── */
+function scrollChat() {
+  const wrap = document.getElementById('chat-wrap');
+  requestAnimationFrame(() => {
+    wrap.scrollTop = wrap.scrollHeight;
+  });
+}
+
+/* ────────────────────────────────────────────────
+   Textarea auto-resize
+──────────────────────────────────────────────── */
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function inputKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+/* ────────────────────────────────────────────────
+   File upload
+──────────────────────────────────────────────── */
+function triggerUpload() {
+  document.getElementById('file-input').click();
+}
+
+function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  uploadFile(file);
+  event.target.value = '';
+  document.getElementById('upload-overlay').classList.remove('visible');
+}
+
+function uploadFile(file) {
+  addSystemMessage(`⬆️ Загружаю ${file.name}...`);
+  showTyping();
+
+  const form = new FormData();
+  form.append('file', file);
+
+  fetch('/api/upload', { method: 'POST', body: form })
+    .then(r => r.json())
+    .then(data => {
+      hideTyping();
+      const reply = data.ai_response || data.analysis || `Файл ${file.name} загружен`;
+      addAiMessage(reply);
+    })
+    .catch(err => {
+      hideTyping();
+      addSystemMessage('❌ Ошибка загрузки: ' + err.message);
+    });
+}
+
+function closeUploadOverlay() {
+  document.getElementById('upload-overlay').classList.remove('visible');
+}
+
+// Drag and drop
+document.addEventListener('dragenter', (e) => {
+  if (e.dataTransfer.types.includes('Files')) {
+    document.body.classList.add('drag-over');
+    document.getElementById('upload-overlay').classList.add('visible');
+  }
+});
+document.addEventListener('dragleave', (e) => {
+  if (!e.relatedTarget || e.relatedTarget === document.documentElement) {
+    document.body.classList.remove('drag-over');
+  }
+});
+document.addEventListener('dragover', (e) => { e.preventDefault(); });
+document.addEventListener('drop', (e) => {
+  e.preventDefault();
+  document.body.classList.remove('drag-over');
+  document.getElementById('upload-overlay').classList.remove('visible');
+  const file = e.dataTransfer.files[0];
+  if (file) uploadFile(file);
+});
+
+/* ────────────────────────────────────────────────
+   Microphone / Voice input
+──────────────────────────────────────────────── */
+function toggleMic() {
+  if (isRecording) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+}
+
+async function startRecording() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast('Микрофон недоступен', 'err');
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(audioChunks, { type: 'audio/webm' });
+      stream.getTracks().forEach(t => t.stop());
+      // For now, just show a message — voice transcription requires server endpoint
+      showToast('Голосовой ввод записан', 'ok');
+      addSystemMessage('🎙️ Голосовое сообщение (транскрипция не реализована)');
+    };
+    mediaRecorder.start();
+    isRecording = true;
+    document.getElementById('mic-btn').classList.add('recording');
+    document.getElementById('mic-btn').textContent = '⏹️';
+  } catch(e) {
+    showToast('Ошибка микрофона: ' + e.message, 'err');
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  isRecording = false;
+  document.getElementById('mic-btn').classList.remove('recording');
+  document.getElementById('mic-btn').textContent = '🎙️';
+}
+
+/* ────────────────────────────────────────────────
+   System state pills
+──────────────────────────────────────────────── */
+function setSystemState(state) {
+  currentSystemState = state;
+  document.querySelectorAll('.state-pill').forEach(p => {
+    p.classList.remove('active');
+    if (p.dataset.state === state) p.classList.add('active');
+  });
+
+  // Update dot indicators
+  const dg = document.getElementById('dot-green');
+  const do_ = document.getElementById('dot-orange');
+  const dr = document.getElementById('dot-red');
+
+  dg.className = 'dot dim';
+  do_.className = 'dot dim';
+  dr.className = 'dot dim';
+
+  if (state === 'ok')   dg.className = 'dot white';
+  if (state === 'warn') { dg.className = 'dot white'; do_.className = 'dot orange'; }
+  if (state === 'crit') { dg.className = 'dot white'; do_.className = 'dot orange'; dr.className = 'dot red'; }
+}
+
+function filterByState(state) {
+  setSystemState(state);
+  if (state === 'ok')   addSystemMessage('✅ Режим: Спокойное состояние');
+  if (state === 'warn') { addSystemMessage('⚠️ Режим: Предупреждения'); sendSuggestion('покажи предупреждения системы'); }
+  if (state === 'crit') { addSystemMessage('🔴 Режим: Критичные проблемы'); sendSuggestion('покажи критичные проблемы'); }
+}
+
+function handleStatusUpdate(data) {
+  if (data.health) updateHealthDisplay(data.health);
+  if (data.modules) updateModuleCards(data.modules);
+}
+
+/* ────────────────────────────────────────────────
+   API data fetching
+──────────────────────────────────────────────── */
+async function loadInitialData() {
+  try {
+    // Status
+    const status = await fetch('/api/status').then(r => r.json()).catch(() => null);
+    if (status) {
+      const mods = status.modules || {};
+      const running = Object.values(mods).filter(m => m.status === 'running').length;
+      const total = Object.keys(mods).length;
+      document.getElementById('session-badge').textContent =
+        `${total} модулей · навыков: ${status.brain?.skills ?? 0}`;
+      updateModuleCards(mods);
+    }
+  } catch(e) {}
+
+  try {
+    // Health
+    const health = await fetch('/api/health').then(r => r.json()).catch(() => null);
+    if (health) {
+      lastHealthData = health;
+      updateHealthDisplay(health);
+    }
+  } catch(e) {}
+
+  try {
+    // System overview for module vals
+    const ov = await fetch('/api/system/overview').then(r => r.json()).catch(() => null);
+    if (ov) updateSystemOverview(ov);
+  } catch(e) {}
+
+  try {
+    // Mesh nodes
+    const mesh = await fetch('/mesh/nodes').then(r => r.json()).catch(() => null);
+    if (mesh && mesh.nodes) {
+      const cnt = Object.keys(mesh.nodes).length;
+      if (cnt > 0) {
+        document.getElementById('session-badge').textContent += ` · нод: ${cnt}`;
+      }
+    }
+  } catch(e) {}
+}
+
+function updateModuleCards(mods) {
+  Object.entries(mods).forEach(([name, info]) => {
+    const status = info.status || 'unknown';
+    // Map module names to card IDs
+    const map = { files: 'mod-files', processes: 'mod-procs', network: 'mod-net', system: 'mod-health', watchdog: 'mod-health' };
+    const id = map[name];
+    if (id) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = status === 'running' ? '●' : '○';
+    }
+  });
+}
+
+function updateHealthDisplay(health) {
+  const issues = (health.issues || []).length;
+  const warnings = (health.warnings || []).length;
+  const el = document.getElementById('mod-health');
+  if (el) el.textContent = issues > 0 ? `${issues} ⚠` : '✓';
+
+  // Update system state
+  if (issues > 0) setSystemState('crit');
+  else if (warnings > 0) setSystemState('warn');
+  else setSystemState('ok');
+}
+
+function updateSystemOverview(data) {
+  try {
+    if (data.cpu !== undefined) {
+      const cpu = Math.round(data.cpu);
+      document.getElementById('mod-cpu').textContent = cpu + '%';
+      document.querySelector('[data-cmd="загрузка CPU"]')?.classList.toggle('warn', cpu > 80);
+      document.querySelector('[data-cmd="загрузка CPU"]')?.classList.toggle('crit', cpu > 95);
+    }
+    if (data.memory) {
+      const pct = Math.round(data.memory.percent || data.memory.used_pct || 0);
+      document.getElementById('mod-mem').textContent = pct + '%';
+      document.querySelector('[data-cmd="использование памяти"]')?.classList.toggle('warn', pct > 80);
+    }
+    if (data.disk !== undefined || data.disks !== undefined) {
+      const d = data.disk || data.disks;
+      if (typeof d === 'number') document.getElementById('mod-disks').textContent = Math.round(d) + '%';
+    }
+    if (data.processes !== undefined) {
+      document.getElementById('mod-procs').textContent = data.processes;
+    }
+    if (data.connections !== undefined) {
+      document.getElementById('mod-net').textContent = data.connections;
+    }
+  } catch(e) {}
+}
+
+/* ────────────────────────────────────────────────
+   Toast
+──────────────────────────────────────────────── */
+function showToast(msg, type) {
+  const tc = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast ' + (type || '');
+  el.textContent = msg;
+  tc.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+/* ────────────────────────────────────────────────
+   Helpers
+──────────────────────────────────────────────── */
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/* ────────────────────────────────────────────────
+   Periodic refresh (every 30s)
+──────────────────────────────────────────────── */
+setInterval(async () => {
+  try {
+    const ov = await fetch('/api/system/overview').then(r => r.json()).catch(() => null);
+    if (ov) updateSystemOverview(ov);
+    const health = await fetch('/api/health').then(r => r.json()).catch(() => null);
+    if (health) updateHealthDisplay(health);
+  } catch(e) {}
+}, 30000);
+
+/* ────────────────────────────────────────────────
+   Init
+──────────────────────────────────────────────── */
+wsConnect();
+loadInitialData();
+
+// Focus input on load
+window.addEventListener('load', () => {
+  document.getElementById('msg-input').focus();
+});
+</script>
 </body>
 </html>

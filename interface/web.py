@@ -12,8 +12,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from core.bus import SystemBus
 from modules.files import FilesModule
 from modules.processes import ProcessesModule
@@ -62,6 +63,10 @@ app = FastAPI(title="AI-OS", lifespan=lifespan)
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard():
+    static_dir = Path(__file__).parent / "static"
+    index_file = static_dir / "index.html"
+    if index_file.exists():
+        return HTMLResponse(index_file.read_text(encoding="utf-8"))
     return DASHBOARD_HTML
 
 @app.get("/api/status")
@@ -727,3 +732,42 @@ function togMic(){
 init();
 </script>
 </body></html>"""
+
+# --- WebSocket endpoint ---
+
+@app.websocket("/ws")
+async def websocket_chat(ws: WebSocket):
+    await ws.accept()
+    # Send welcome + module status
+    modules_info = bus.list_modules()
+    module_list = []
+    for name, info in modules_info.items():
+        icon = "+" if info["status"] == "running" else "-"
+        module_list.append(f"[{icon}] {name}: {info['description']}")
+    await ws.send_json({
+        "type": "system",
+        "text": "AI-OS v0.1 — Модульная ИИ-система\n\n" + "\n".join(module_list) + "\n\nГотов к работе."
+    })
+    try:
+        while True:
+            data = await ws.receive_text()
+            try:
+                msg = json.loads(data)
+                user_input = msg.get("input", "").strip()
+            except json.JSONDecodeError:
+                user_input = data.strip()
+            if not user_input:
+                continue
+            try:
+                result = await brain.process(user_input)
+                text = result if isinstance(result, str) else json.dumps(result, ensure_ascii=False, indent=2, default=str)
+                await ws.send_json({"type": "response", "input": user_input, "text": text})
+            except Exception as e:
+                await ws.send_json({"type": "error", "text": f"Ошибка: {e}"})
+    except WebSocketDisconnect:
+        pass
+
+# Static files
+_static_dir = Path(__file__).parent / "static"
+if _static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
