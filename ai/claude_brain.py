@@ -94,6 +94,8 @@ class ClaudeBrain:
 8. Используй базу знаний (kb_search, kb_solve) для решения проблем.
 9. НЕ вызывай модули повторно! Если уже есть результат и пользователь спрашивает "что?", "и?", "объясни" — просто объясни предыдущий результат ТЕКСТОМ, не вызывая модули снова.
 10. При диагностике вызывай максимум system.overview + watchdog.check. НЕ дублируй — overview уже содержит CPU, RAM, диски.
+11. Если пользователь пишет одно слово (claude, gemini, файлы, диски) — НЕ вызывай модули, просто ответь текстом что можешь сделать.
+12. ВСЕГДА проверяй что аргументы команды заполнены. НЕ вызывай utils.find без pattern, files.list без path, и т.д.
 
 ВАЖНО:
 - НИКОГДА не оставляй comment пустым!
@@ -187,14 +189,21 @@ class ClaudeBrain:
                     "results": results
                 }
             else:
-                # Claude ответил текстом — просто возвращаем
+                # Claude ответил текстом — очищаем от случайного JSON
+                clean = response.strip()
+                # Убираем JSON-блоки которые не распарсились как actions
+                import re
+                clean = re.sub(r'\{["\s]*actions["\s]*:.*?\}', '', clean, flags=re.DOTALL).strip()
+                if not clean:
+                    clean = response.strip()
+
                 self.history.append({
                     "time": timestamp,
                     "input": user_input,
                     "method": "claude_text",
-                    "response": response
+                    "response": clean
                 })
-                return response
+                return clean
 
         except Exception as e:
             import traceback
@@ -274,19 +283,41 @@ class ClaudeBrain:
         """Попробовать распарсить ответ Claude как JSON с действиями"""
         text = response.strip()
 
-        # Ищем JSON в ответе
-        start = text.find("{")
-        end = text.rfind("}") + 1
+        # Метод 1: весь ответ — чистый JSON
+        if text.startswith("{"):
+            try:
+                data = json.loads(text)
+                if "actions" in data and isinstance(data["actions"], list):
+                    return data
+            except json.JSONDecodeError:
+                pass
 
-        if start == -1 or end <= start:
-            return None
-
-        try:
-            data = json.loads(text[start:end])
-            if "actions" in data and isinstance(data["actions"], list):
-                return data
-        except json.JSONDecodeError:
-            pass
+        # Метод 2: JSON внутри текста — ищем все { } блоки
+        depth = 0
+        start = -1
+        for i, ch in enumerate(text):
+            if ch == '{':
+                if depth == 0:
+                    start = i
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+                if depth == 0 and start >= 0:
+                    candidate = text[start:i+1]
+                    try:
+                        data = json.loads(candidate)
+                        if "actions" in data and isinstance(data["actions"], list):
+                            # Собрать текст вокруг JSON как comment если comment пустой
+                            if not data.get("comment"):
+                                before = text[:start].strip()
+                                after = text[i+1:].strip()
+                                extra_text = (before + " " + after).strip()
+                                if extra_text:
+                                    data["comment"] = extra_text
+                            return data
+                    except json.JSONDecodeError:
+                        pass
+                    start = -1
 
         return None
 
