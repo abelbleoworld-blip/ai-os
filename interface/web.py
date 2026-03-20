@@ -525,7 +525,7 @@ html,body{height:100%;font-family:'SF Pro Display','Inter',-apple-system,system-
   <div class="inp-area">
     <div class="upanel" id="upanel"></div>
     <div class="inp-row">
-      <button class="tb-btn" id="ubtn" onclick="toggleUtils()" title="Utils">\u2630</button>
+      <button class="tb-btn" id="ubtn" onclick="toggleUtils()" title="Utils">&#9776;</button>
       <input type="text" class="inp-f" id="inp" placeholder="Скажи что-нибудь..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();send()}">
       <button class="ib ib-g" onclick="document.getElementById('fI').click()" title="File">&#128206;</button>
       <input type="file" id="fI" style="display:none" onchange="upFile(this)">

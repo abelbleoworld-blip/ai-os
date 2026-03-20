@@ -90,23 +90,26 @@ class FilesModule(SystemModule):
 
     async def cmd_disk_usage(self):
         """Использование дисков"""
+        import psutil
         result = []
-        for part in shutil.disk_usage("/"):
-            pass
-        # Для Windows — проверяем все доступные диски
-        import string
-        for letter in string.ascii_uppercase:
-            drive = f"{letter}:\\"
-            if os.path.exists(drive):
-                try:
-                    usage = shutil.disk_usage(drive)
-                    result.append({
-                        "drive": drive,
-                        "total_gb": round(usage.total / (1024**3), 1),
-                        "used_gb": round(usage.used / (1024**3), 1),
-                        "free_gb": round(usage.free / (1024**3), 1),
-                        "percent": round(usage.used / usage.total * 100, 1)
-                    })
-                except PermissionError:
+        seen = set()
+        for p in psutil.disk_partitions():
+            if p.mountpoint in ('/etc/resolv.conf', '/etc/hostname', '/etc/hosts'):
+                continue
+            try:
+                usage = psutil.disk_usage(p.mountpoint)
+                key = (usage.total, usage.free)
+                if key in seen:
+                    continue
+                seen.add(key)
+                result.append({
+                    "drive": p.mountpoint,
+                    "mountpoint": p.mountpoint,
+                    "total_gb": round(usage.total / (1024**3), 1),
+                    "used_gb": round(usage.used / (1024**3), 1),
+                    "free_gb": round(usage.free / (1024**3), 1),
+                    "percent": usage.percent
+                })
+            except (PermissionError, OSError):
                     pass
         return result
