@@ -7,6 +7,7 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - AIOS_MODEL=${AIOS_MODEL:-claude-haiku-4-5-20251001}
+      - OPENROUTER_BASE_URL=${OPENROUTER_BASE_URL:-https://openrouter.ai}
     volumes:
       - aios-memory:/app/memory
       - aios-logs:/app/logs

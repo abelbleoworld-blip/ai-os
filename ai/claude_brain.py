@@ -220,8 +220,9 @@ class ClaudeBrain:
             ]
         }).encode("utf-8")
 
+        base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai")
         req = urllib.request.Request(
-            "https://openrouter.ai/api/v1/chat/completions",
+            f"{base_url}/api/v1/chat/completions",
             data=payload,
             headers={
                 "Authorization": f"Bearer {self.openrouter_key}",
