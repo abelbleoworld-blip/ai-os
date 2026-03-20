@@ -33,6 +33,7 @@ from ai.claude_brain import ClaudeBrain
 from ai.trainer import AutoTrainer
 from modules.learner import LearnerModule
 from modules.ingest import IngestModule
+from modules.utils import UtilsModule
 
 bus = SystemBus()
 modules = [FilesModule(), ProcessesModule(), SystemInfoModule(), NetworkModule(), DesignerModule(), PlatformModule(), VersionsModule(), ScannerModule(), SoftwareModule()]
@@ -55,6 +56,8 @@ learner = LearnerModule(bus=bus, brain=brain, trainer=trainer)
 bus.register(learner)
 ingest = IngestModule(bus=bus, brain=brain)
 bus.register(ingest)
+utils = UtilsModule(bus=bus)
+bus.register(utils)
 
 # Hook learner into brain processing
 _orig_process = brain.process
