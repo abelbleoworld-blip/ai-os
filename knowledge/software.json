@@ -1,0 +1,91 @@
+{
+  "module": "software",
+  "entries": [
+    {
+      "id": 1,
+      "title": "Установка ПО на macOS",
+      "content": "brew install <formula> — CLI-утилиты. brew install --cask <app> — GUI-приложения (VLC, Chrome, VSCode). brew search <query> — поиск. brew list — установленные. brew upgrade — обновить всё. brew info <pkg> — информация.",
+      "tags": ["brew", "homebrew", "macos", "установка"],
+      "source": "macOS",
+      "created": "2026-03-20T12:00:00",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 2,
+      "title": "Установка ПО на Linux",
+      "content": "apt install -y <pkg> — Debian/Ubuntu. dnf install -y <pkg> — Fedora. pacman -S <pkg> — Arch. apt update && apt upgrade — обновить систему. apt search <query> — поиск. dpkg --list — установленные.",
+      "tags": ["apt", "linux", "установка", "пакеты"],
+      "source": "Linux",
+      "created": "2026-03-20T12:00:00",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 3,
+      "title": "Маппинг популярных пакетов между ОС",
+      "content": "VLC: winget=VideoLAN.VLC, brew=vlc, apt=vlc. Chrome: winget=Google.Chrome, brew=google-chrome. VSCode: winget=Microsoft.VisualStudioCode, brew=visual-studio-code. Firefox: winget=Mozilla.Firefox, brew=firefox. Telegram: brew=telegram, winget=Telegram.TelegramDesktop.",
+      "tags": ["маппинг", "пакеты", "кроссплатформенный"],
+      "source": "cross-platform",
+      "created": "2026-03-20T12:00:00",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 4,
+      "title": "Docker на macOS",
+      "content": "brew install --cask docker — установка Docker Desktop. docker compose up --build -d — сборка и запуск. docker compose logs -f — логи. docker compose ps — статус. docker compose down — остановить. docker system prune — очистить неиспользуемое.",
+      "tags": ["docker", "контейнеры", "macos"],
+      "source": "Docker",
+      "created": "2026-03-20T12:00:00",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 5,
+      "title": "Определение ОС и пакетного менеджера",
+      "content": "platform.system() → Windows/Linux/Darwin. shutil.which('brew') — есть ли brew. shutil.which('apt') — есть ли apt. В Docker-контейнере всегда Linux + apt даже если хост macOS. Для управления хостом через AI-OS нужен Abel Agent или mesh.send.",
+      "tags": ["определение", "ос", "автоматизация"],
+      "source": "platform",
+      "created": "2026-03-20T12:00:00",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 6,
+      "title": "Решение: winget не найден",
+      "content": "Ошибка 'winget не найден' означает что система не Windows. Решение: определить ОС через platform.system() и использовать brew (macOS) или apt (Linux). Модуль software.py обновлён для кроссплатформенной работы.",
+      "tags": ["ошибка", "winget", "решение", "кроссплатформенный"],
+      "source": "fix",
+      "created": "2026-03-20T12:00:00",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 7,
+      "title": "macOS системные команды",
+      "content": "system_profiler SPHardwareDataType — железо. sw_vers — версия macOS. df -h — диски. vm_stat — память. ps aux — процессы. top -l 1 — нагрузка. smartctl -a /dev/disk0 — здоровье SSD. networksetup -listallhardwareports — сетевые интерфейсы. defaults write/read — настройки.",
+      "tags": ["macos", "система", "команды", "диагностика"],
+      "source": "macOS",
+      "created": "2026-03-20T12:00:00",
+      "used_count": 0,
+      "rating": 0
+    },
+    {
+      "id": 8,
+      "title": "Linux системные команды в Docker",
+      "content": "cat /etc/os-release — версия ОС. free -h — память. df -h — диски. ps aux — процессы. uptime — аптайм. ip addr — сеть. apt list --installed — пакеты. dpkg -l — все установленные. cat /proc/cpuinfo — CPU. cat /proc/meminfo — RAM.",
+      "tags": ["linux", "docker", "система", "команды"],
+      "source": "Linux",
+      "created": "2026-03-20T12:00:00",
+      "used_count": 0,
+      "rating": 0
+    }
+  ],
+  "solutions": {
+    "winget не найден": "Используй brew на macOS или apt на Linux. Модуль software автоматически определяет ОС.",
+    "command not found brew": "Установи Homebrew: /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"",
+    "apt unable to locate": "Запусти apt update перед установкой. Проверь правильность имени пакета.",
+    "docker permission denied": "Добавь пользователя в группу docker: sudo usermod -aG docker $USER"
+  }
+}
