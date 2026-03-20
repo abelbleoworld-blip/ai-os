@@ -363,20 +363,57 @@ html,body{height:100%;font-family:'SF Pro Display','Inter',-apple-system,system-
 .tb-btn:hover{border-color:var(--accent);color:var(--accent2);background:rgba(99,102,241,0.08)}
 .tb-btn.active{border-color:var(--accent);color:var(--accent2);background:rgba(99,102,241,0.12)}
 
-/* Utils panel */
+/* Utils panel (bottom drawer) */
 .upanel{display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:var(--r);padding:16px;margin-bottom:8px;backdrop-filter:blur(30px);max-height:60vh;overflow-y:auto}
 .upanel.open{display:block;animation:mIn .18s ease}
 .upanel::-webkit-scrollbar{width:3px}.upanel::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:3px}
-.ucat{margin-bottom:14px}
-.ucat-title{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.ucat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.utile{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px;cursor:pointer;transition:all .15s;text-align:center}
-.utile:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.12);transform:translateY(-1px)}
-.utile:active{transform:scale(.96)}
-.utile-i{font-size:18px;display:block;margin-bottom:4px}
-.utile-n{font-size:11px;color:var(--t2);font-weight:500}
-.utile-d{font-size:9px;color:var(--t3);margin-top:2px}
-@media(max-width:600px){.ucat-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* Android-style folders */
+.ucat{margin-bottom:6px}
+.ucat-header{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;border-radius:12px;transition:all .15s;user-select:none}
+.ucat-header:hover{background:rgba(255,255,255,0.04)}
+.ucat-header:active{transform:scale(.98)}
+.ucat-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.ucat-info{flex:1}
+.ucat-name{font-size:13px;font-weight:600}
+.ucat-count{font-size:10px;color:var(--t3)}
+.ucat-arrow{font-size:12px;color:var(--t3);transition:transform .2s}
+.ucat-arrow.open{transform:rotate(90deg)}
+.ucat-grid{display:none;grid-template-columns:repeat(4,1fr);gap:6px;padding:8px 4px 12px;animation:mIn .15s ease}
+.ucat-grid.open{display:grid}
+.utile{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:12px 6px;cursor:pointer;transition:all .15s;text-align:center}
+.utile:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.1);transform:translateY(-1px)}
+.utile:active{transform:scale(.94)}
+.utile-i{font-size:22px;display:block;margin-bottom:4px}
+.utile-n{font-size:10px;color:var(--t2);font-weight:500}
+.utile-d{display:none}
+
+/* Folder colors */
+.folder-files{background:rgba(99,102,241,0.12)}
+.folder-terminal{background:rgba(34,197,94,0.12)}
+.folder-text{background:rgba(245,158,11,0.12)}
+.folder-system{background:rgba(239,68,68,0.12)}
+.folder-ai{background:rgba(168,85,247,0.12)}
+.folder-design{background:rgba(236,72,153,0.12)}
+.folder-tools{background:rgba(6,182,212,0.12)}
+
+/* File browser overlay */
+.fbrowser{display:none;position:fixed;top:40px;left:0;right:0;bottom:0;z-index:50;background:var(--bg);flex-direction:column;max-width:740px;margin:0 auto}
+.fbrowser.open{display:flex}
+.fb-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0}
+.fb-back{width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,0.07);background:transparent;color:var(--t2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px}
+.fb-back:hover{border-color:var(--accent);color:var(--accent2)}
+.fb-path{flex:1;font-size:13px;color:var(--t2);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fb-list{flex:1;overflow-y:auto;padding:8px 16px}
+.fb-list::-webkit-scrollbar{width:3px}.fb-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:3px}
+.fb-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;cursor:pointer;transition:all .12s}
+.fb-item:hover{background:rgba(255,255,255,0.04)}
+.fb-item:active{background:rgba(255,255,255,0.06);transform:scale(.99)}
+.fb-icon{font-size:24px;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(255,255,255,0.04)}
+.fb-name{font-size:14px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fb-meta{font-size:11px;color:var(--t3);text-align:right;flex-shrink:0}
+
+@media(max-width:600px){.ucat-grid.open{grid-template-columns:repeat(3,1fr)}}
 
 /* File card */
 .fcard{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:var(--rs);padding:16px;margin-top:8px;display:flex;align-items:center;gap:14px}
@@ -473,6 +510,16 @@ html,body{height:100%;font-family:'SF Pro Display','Inter',-apple-system,system-
 </div>
 <div class="toasts" id="toasts"></div>
 
+<!-- FILE BROWSER -->
+<div class="fbrowser" id="fbrowser">
+  <div class="fb-bar">
+    <button class="fb-back" onclick="fbBack()">\u2190</button>
+    <div class="fb-path" id="fbPath">/</div>
+    <button class="fb-back" onclick="fbClose()">\u2715</button>
+  </div>
+  <div class="fb-list" id="fbList"></div>
+</div>
+
 <div class="wrap">
   <div class="scroll" id="chat"></div>
   <div class="inp-area">
@@ -544,68 +591,82 @@ function modGrid(){
 
 function utilsPanel(){
   const cats=[
-    {name:'Files',icon:'\u{1F4C1}',tools:[
-      {i:'\u{1F4C2}',n:'Browse',d:'Файлы',c:'utils.ls path=/app'},
-      {i:'\u{1F332}',n:'Tree',d:'Дерево',c:'utils.tree path=/app depth=2'},
-      {i:'\u{1F50D}',n:'Find',d:'Поиск',c:'ask:Что ищем? (напр. *.py)|utils.find pattern=$'},
-      {i:'\u{1F4CB}',n:'Recent',d:'Недавние',c:'utils.recent'},
-      {i:'\u{1F4CA}',n:'Size',d:'Размер',c:'ask:Путь к папке/файлу|utils.size path=$'},
-      {i:'\u{1F503}',n:'Duplicates',d:'Дубликаты',c:'utils.duplicates path=/app'},
+    {name:'Files',icon:'\u{1F4C1}',cls:'folder-files',tools:[
+      {i:'\u{1F4C2}',n:'Browse',c:'_browse:/app'},
+      {i:'\u{1F332}',n:'Tree',c:'utils.tree path=/app depth=2'},
+      {i:'\u{1F50D}',n:'Find',c:'ask:Что ищем? (*.py)|utils.find pattern=$'},
+      {i:'\u{1F4CB}',n:'Recent',c:'utils.recent'},
+      {i:'\u{1F4CA}',n:'Size',c:'ask:Путь|utils.size path=$'},
+      {i:'\u{1F503}',n:'Dupes',c:'utils.duplicates path=/app'},
     ]},
-    {name:'Terminal',icon:'\u{1F4BB}',tools:[
-      {i:'\u2318',n:'Run',d:'Команда',c:'ask:Введи команду|utils.exec command=$'},
-      {i:'\u{1F50E}',n:'Which',d:'Найти прогу',c:'ask:Имя программы|utils.which program=$'},
-      {i:'\u{1F4DD}',n:'Env',d:'Переменные',c:'utils.env'},
-      {i:'\u{1F6AA}',n:'Ports',d:'Открытые',c:'utils.ports'},
-      {i:'\u{1F310}',n:'IP',d:'Адреса',c:'utils.ip'},
-      {i:'\u2B06',n:'Uptime',d:'Аптайм',c:'utils.uptime'},
+    {name:'Terminal',icon:'\u{1F4BB}',cls:'folder-terminal',tools:[
+      {i:'\u2318',n:'Run',c:'ask:Команда|utils.exec command=$'},
+      {i:'\u{1F50E}',n:'Which',c:'ask:Программа|utils.which program=$'},
+      {i:'\u{1F4DD}',n:'Env',c:'utils.env'},
+      {i:'\u{1F6AA}',n:'Ports',c:'utils.ports'},
+      {i:'\u{1F310}',n:'IP',c:'utils.ip'},
+      {i:'\u2B06',n:'Uptime',c:'utils.uptime'},
     ]},
-    {name:'Text',icon:'\u{1F4DD}',tools:[
-      {i:'\u{1F50D}',n:'Grep',d:'Поиск текста',c:'ask:Что ищем?|utils.grep pattern=$'},
-      {i:'\u{1F4C4}',n:'Preview',d:'Превью',c:'ask:Путь к файлу|utils.preview path=$'},
-      {i:'\u{1F522}',n:'Count',d:'Строки/слова',c:'ask:Путь к файлу|utils.wc path=$'},
-      {i:'\u2194',n:'Diff',d:'Сравнить',c:'ask:Файл 1|ask:Файл 2|utils.diff file1=$ file2=$'},
+    {name:'Text',icon:'\u{1F4DD}',cls:'folder-text',tools:[
+      {i:'\u{1F50D}',n:'Grep',c:'ask:Текст|utils.grep pattern=$'},
+      {i:'\u{1F4C4}',n:'Preview',c:'ask:Файл|utils.preview path=$'},
+      {i:'\u{1F522}',n:'Count',c:'ask:Файл|utils.wc path=$'},
+      {i:'\u2194',n:'Diff',c:'ask:Файл 1|ask:Файл 2|utils.diff file1=$ file2=$'},
     ]},
-    {name:'System',icon:'\u2699',tools:[
-      {i:'\u{1F4CA}',n:'Top',d:'Процессы',c:'utils.top'},
-      {i:'\u{1F4BE}',n:'Disk',d:'Место',c:'utils.df'},
-      {i:'\u{1F4BF}',n:'DiskMap',d:'DaisyDisk',c:'utils.diskmap path=/app'},
-      {i:'\u{1F9E0}',n:'Overview',d:'Обзор',c:'system.overview'},
-      {i:'\u2764',n:'Health',d:'Здоровье',c:'watchdog.check'},
+    {name:'System',icon:'\u2699',cls:'folder-system',tools:[
+      {i:'\u{1F4CA}',n:'Top',c:'utils.top'},
+      {i:'\u{1F4BE}',n:'Disk',c:'utils.df'},
+      {i:'\u{1F4BF}',n:'DiskMap',c:'utils.diskmap path=/app'},
+      {i:'\u{1F9E0}',n:'Overview',c:'system.overview'},
+      {i:'\u2764',n:'Health',c:'watchdog.check'},
     ]},
-    {name:'AI & Learn',icon:'\u{1F916}',tools:[
-      {i:'\u{1F9E0}',n:'Learner',d:'Статус обучения',c:'learner.status'},
-      {i:'\u{1F4DA}',n:'Knowledge',d:'База знаний',c:'ingest.stats'},
-      {i:'\u{1F4E5}',n:'Ingest',d:'Загрузить данные',c:'ask:Путь к файлу/папке|ingest.scan path=$'},
-      {i:'\u{1F517}',n:'Mesh',d:'Ноды сети',c:'mesh.nodes'},
-      {i:'\u2B50',n:'Skills',d:'Навыки',c:'skills'},
-      {i:'\u{1F44D}',n:'Feedback',d:'Оценить ответ',c:'learner.feedback good'},
-      {i:'\u{1F4A1}',n:'Auto Skills',d:'Авто-навыки',c:'learner.auto_skills'},
-      {i:'\u{1F4CB}',n:'Lessons',d:'Уроки',c:'learner.lessons'},
+    {name:'AI & Learn',icon:'\u{1F916}',cls:'folder-ai',tools:[
+      {i:'\u{1F9E0}',n:'Learner',c:'learner.status'},
+      {i:'\u{1F4DA}',n:'Knowledge',c:'ingest.stats'},
+      {i:'\u{1F4E5}',n:'Ingest',c:'ask:Путь|ingest.scan path=$'},
+      {i:'\u{1F517}',n:'Mesh',c:'mesh.nodes'},
+      {i:'\u2B50',n:'Skills',c:'skills'},
+      {i:'\u{1F44D}',n:'Good',c:'learner.feedback good'},
+      {i:'\u{1F4A1}',n:'Auto',c:'learner.auto_skills'},
+      {i:'\u{1F4CB}',n:'Lessons',c:'learner.lessons'},
     ]},
-    {name:'Design',icon:'\u{1F3A8}',tools:[
-      {i:'\u{1F3A8}',n:'Palette',d:'Палитра',c:'designer.palette'},
-      {i:'\u{1F308}',n:'Colors',d:'Цвета темы',c:'designer.colors'},
-      {i:'\u{1F4D0}',n:'Layout',d:'Макет',c:'ask:Описание макета|designer.layout description=$'},
-      {i:'\u{1F5BC}',n:'Generate',d:'HTML страница',c:'ask:Описание страницы|designer.generate description=$'},
+    {name:'Design',icon:'\u{1F3A8}',cls:'folder-design',tools:[
+      {i:'\u{1F3A8}',n:'Palette',c:'designer.palette'},
+      {i:'\u{1F308}',n:'Colors',c:'designer.colors'},
+      {i:'\u{1F4D0}',n:'Layout',c:'ask:Описание|designer.layout description=$'},
+      {i:'\u{1F5BC}',n:'Generate',c:'ask:Описание|designer.generate description=$'},
     ]},
-    {name:'Tools',icon:'\u{1F504}',tools:[
-      {i:'\u{1F510}',n:'Hash',d:'MD5/SHA',c:'ask:Путь к файлу|utils.hash path=$'},
-      {i:'\u{1F4E6}',n:'Base64',d:'Encode',c:'ask:Текст|utils.b64encode text=$'},
-      {i:'\u{1F4DD}',n:'Notes',d:'Заметки',c:'utils.notes'},
-      {i:'\u{1F4DD}',n:'New Note',d:'Создать',c:'ask:Имя заметки|ask:Текст|utils.note name=$ text=$'},
+    {name:'Tools',icon:'\u{1F504}',cls:'folder-tools',tools:[
+      {i:'\u{1F510}',n:'Hash',c:'ask:Файл|utils.hash path=$'},
+      {i:'\u{1F4E6}',n:'Base64',c:'ask:Текст|utils.b64encode text=$'},
+      {i:'\u{1F4DD}',n:'Notes',c:'utils.notes'},
+      {i:'\u270F',n:'New Note',c:'ask:Имя|ask:Текст|utils.note name=$ text=$'},
     ]},
   ];
   let h='';
-  cats.forEach(cat=>{
-    h+='<div class="ucat"><div class="ucat-title">'+cat.icon+' '+cat.name+'</div><div class="ucat-grid">';
+  cats.forEach((cat,ci)=>{
+    const fid='folder_'+ci;
+    h+='<div class="ucat">';
+    h+='<div class="ucat-header" onclick="togFolder(\''+fid+'\')">';
+    h+='<div class="ucat-icon '+cat.cls+'">'+cat.icon+'</div>';
+    h+='<div class="ucat-info"><div class="ucat-name">'+cat.name+'</div><div class="ucat-count">'+cat.tools.length+' tools</div></div>';
+    h+='<span class="ucat-arrow" id="arr_'+fid+'">\u25B6</span>';
+    h+='</div>';
+    h+='<div class="ucat-grid" id="'+fid+'">';
     cat.tools.forEach(t=>{
-      h+='<div class="utile" onclick="runUtil(\''+t.c.replace(/'/g,"\\'")+'\')">';
-      h+='<span class="utile-i">'+t.i+'</span><span class="utile-n">'+t.n+'</span><span class="utile-d">'+t.d+'</span></div>';
+      h+='<div class="utile" onclick="event.stopPropagation();runUtil(\''+t.c.replace(/'/g,"\\'")+'\')">';
+      h+='<span class="utile-i">'+t.i+'</span><span class="utile-n">'+t.n+'</span></div>';
     });
     h+='</div></div>';
   });
   return h;
+}
+
+function togFolder(id){
+  const g=document.getElementById(id);
+  const a=document.getElementById('arr_'+id);
+  g.classList.toggle('open');
+  a.classList.toggle('open');
 }
 
 function toggleUtils(){
@@ -616,9 +677,11 @@ function toggleUtils(){
 }
 
 function runUtil(cmd){
-  // Close panel
+  // Close panels
   document.getElementById('upanel').classList.remove('open');
-  document.getElementById('ubtn').classList.remove('active');
+  const ubtn=document.getElementById('ubtn');if(ubtn)ubtn.classList.remove('active');
+  // File browser
+  if(cmd.startsWith('_browse:')){fbOpen(cmd.replace('_browse:',''));return}
   // Handle ask: prompts
   if(cmd.startsWith('ask:')){
     const parts=cmd.split('|');
@@ -913,6 +976,70 @@ function updateBg(s){
   document.body.style.background=s==='CRITICAL'?'var(--bg-c)':s==='WARNING'?'var(--bg-w)':'var(--bg)';
   const d=document.getElementById('sd');d.className='sdot'+(s==='CRITICAL'?' c':s==='WARNING'?' w':'');
   document.getElementById('sCtx').textContent=s==='OK'?'AI-OS':s==='CRITICAL'?'AI-OS \u2022 CRITICAL':'AI-OS \u2022 Warning';
+}
+
+/* === FILE BROWSER === */
+let fbHistory=['/app'];
+const fileIcons={dir:'\u{1F4C1}',py:'\u{1F40D}',js:'\u2B50',ts:'\u{1F535}',json:'\u{1F4CB}',md:'\u{1F4D6}',txt:'\u{1F4C4}',log:'\u{1F4DC}',sh:'\u{1F4DF}',yml:'\u2699',yaml:'\u2699',html:'\u{1F310}',css:'\u{1F3A8}',csv:'\u{1F4CA}',default:'\u{1F4C4}'};
+function getFileIcon(name,isDir){
+  if(isDir) return fileIcons.dir;
+  const ext=name.split('.').pop().toLowerCase();
+  return fileIcons[ext]||fileIcons.default;
+}
+function fmtBytes(b){
+  if(!b||b===null) return '';
+  if(b>1048576) return (b/1048576).toFixed(1)+' MB';
+  if(b>1024) return (b/1024).toFixed(1)+' KB';
+  return b+' B';
+}
+async function fbOpen(path){
+  document.getElementById('fbrowser').classList.add('open');
+  fbHistory=[path];
+  await fbLoad(path);
+}
+function fbClose(){document.getElementById('fbrowser').classList.remove('open')}
+function fbBack(){
+  if(fbHistory.length>1){fbHistory.pop();fbLoad(fbHistory[fbHistory.length-1])}
+  else fbClose();
+}
+async function fbLoad(path){
+  document.getElementById('fbPath').textContent=path;
+  const list=document.getElementById('fbList');
+  list.innerHTML='<div style="padding:20px;text-align:center;color:var(--t3)">Loading...</div>';
+  try{
+    const r=await fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:'utils.ls path='+path+' hidden=false'})});
+    const d=await r.json();
+    let items=dig(d.result);
+    if(items&&items.items) items=items.items;
+    if(!Array.isArray(items)){list.innerHTML='<div style="padding:20px;color:var(--t3)">Empty</div>';return}
+    // Sort: dirs first, then files
+    items.sort((a,b)=>{if(a.type==='dir'&&b.type!=='dir')return -1;if(a.type!=='dir'&&b.type==='dir')return 1;return a.name.localeCompare(b.name)});
+    let h='';
+    items.forEach(f=>{
+      const icon=getFileIcon(f.name,f.type==='dir');
+      const sz=f.type==='dir'?'':f.size;
+      const mod=f.modified||'';
+      if(f.type==='dir'){
+        h+='<div class="fb-item" onclick="fbNav(\''+path+'/'+f.name+'\')">';
+      } else {
+        h+='<div class="fb-item" onclick="fbPreview(\''+path+'/'+f.name+'\')">';
+      }
+      h+='<div class="fb-icon">'+icon+'</div>';
+      h+='<div class="fb-name">'+f.name+'</div>';
+      h+='<div class="fb-meta">'+(typeof sz==='string'?sz:fmtBytes(sz))+'<br>'+mod+'</div>';
+      h+='</div>';
+    });
+    list.innerHTML=h||'<div style="padding:20px;color:var(--t3)">Empty folder</div>';
+  }catch(e){list.innerHTML='<div style="padding:20px;color:var(--red)">Error: '+e.message+'</div>'}
+}
+function fbNav(path){
+  path=path.replace(/\/\//g,'/');
+  fbHistory.push(path);
+  fbLoad(path);
+}
+function fbPreview(path){
+  fbClose();
+  quick('utils.preview path='+path+' lines=30');
 }
 
 /* === INIT === */
