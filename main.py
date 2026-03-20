@@ -22,10 +22,10 @@ import logging
 import sys
 import os
 
-# Фикс кодировки для Windows-консоли
+# Фикс кодировки (Windows + Docker/Linux)
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 if sys.platform == "win32":
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     os.system("chcp 65001 >nul 2>&1")
 
 # Добавить корень проекта в путь
@@ -84,8 +84,10 @@ def _apply_env_config():
 
     if env_anthropic:
         config["anthropic_api_key"] = env_anthropic
+        config["provider"] = "anthropic"
     if env_openrouter:
         config["openrouter_api_key"] = env_openrouter
+        config["provider"] = "openrouter"
     if env_model:
         config["default_model"] = env_model
 
