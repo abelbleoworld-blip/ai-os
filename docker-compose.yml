@@ -12,6 +12,7 @@ services:
       - MESH_NODE_NAME=${MESH_NODE_NAME:-}
       - MESH_HUB_URL=${MESH_HUB_URL:-}
       - MESH_SECRET=${MESH_SECRET:-aios-mesh-2026}
+      - YADISK_TOKEN=${YADISK_TOKEN:-}
     volumes:
       - aios-memory:/app/memory
       - aios-logs:/app/logs

@@ -34,6 +34,8 @@ from ai.trainer import AutoTrainer
 from modules.learner import LearnerModule
 from modules.ingest import IngestModule
 from modules.utils import UtilsModule
+from modules.alice import AliceModule
+from modules.yadisk import YaDiskModule
 
 bus = SystemBus()
 modules = [FilesModule(), ProcessesModule(), SystemInfoModule(), NetworkModule(), DesignerModule(), PlatformModule(), VersionsModule(), ScannerModule(), SoftwareModule()]
@@ -58,6 +60,10 @@ ingest = IngestModule(bus=bus, brain=brain)
 bus.register(ingest)
 utils = UtilsModule(bus=bus)
 bus.register(utils)
+alice = AliceModule(bus=bus, brain=brain)
+bus.register(alice)
+yadisk = YaDiskModule(bus=bus)
+bus.register(yadisk)
 
 # Hook learner into brain processing
 _orig_process = brain.process
@@ -130,6 +136,10 @@ async def api_command(data: dict):
         return {"error": "empty command"}
     result = await brain.process(cmd)
     return {"input": cmd, "result": result}
+
+@app.post("/alice/webhook")
+async def alice_webhook(data: dict):
+    return await alice.handle_webhook(data)
 
 @app.post("/api/upload")
 async def api_upload(file: UploadFile = File(...)):
