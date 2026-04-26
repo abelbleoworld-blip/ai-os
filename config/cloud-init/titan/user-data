@@ -1,0 +1,97 @@
+#cloud-config
+# Subiquity autoinstall для titan (Beelink AZW SER9, Ryzen 9 8945HS, x86_64)
+# Цель: безголовая установка Ubuntu Server 24.04 с готовым SSH, docker, node, python, wg
+# Использование: на USB с Ubuntu Server 24.04 ISO положить рядом с ISO второй раздел `cidata`
+# с этим файлом + meta-data, либо загрузить через ds=nocloud-net.
+# Подробности — README.md в этой папке.
+
+autoinstall:
+  version: 1
+
+  refresh-installer:
+    update: true
+
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+    variant: ""
+
+  identity:
+    hostname: titan
+    realname: Abel
+    username: abel
+    # bcrypt-хеш пароля. По умолчанию пароль = "changeme123" — СМЕНИТЬ при первом входе.
+    # Перегенерировать: mkpasswd -m sha-512 (пакет whois) или
+    # python3 -c 'import crypt; print(crypt.crypt("новый_пароль", crypt.mksalt(crypt.METHOD_SHA512)))'
+    password: "$6$rounds=4096$saltsalt$Z3eYoRPgAnXSL/m5KvJqGxHBAMxPp2G4ouzKcDZsWMNl9ZYNuDgN1fcRSRAUO6nzsaUrPIHpPGqp7fH0aE9F40"
+
+  ssh:
+    install-server: true
+    allow-pw: false
+    authorized-keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJtK74oAbrkZ6/qOF3ZrJUL+HIIZQNmqvfGkYugb7Aai forge-mc3-imac"
+
+  storage:
+    layout:
+      name: direct
+      match:
+        size: largest
+
+  packages:
+    - openssh-server
+    - curl
+    - wget
+    - git
+    - htop
+    - tmux
+    - vim
+    - jq
+    - unzip
+    - ca-certificates
+    - gnupg
+    - lsb-release
+    - python3-pip
+    - python3-venv
+    - build-essential
+    - wireguard
+    - wireguard-tools
+    - resolvconf
+    - ufw
+    - fail2ban
+    - avahi-daemon
+
+  user-data:
+    disable_root: false
+    timezone: Europe/Moscow
+    runcmd:
+      # Docker (official repo)
+      - install -m 0755 -d /etc/apt/keyrings
+      - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+      - chmod a+r /etc/apt/keyrings/docker.asc
+      - |
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list
+      - apt-get update
+      - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+      - usermod -aG docker abel
+      # Node.js 22 (NodeSource)
+      - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+      - apt-get install -y nodejs
+      # mDNS — чтобы titan.local резолвился
+      - systemctl enable --now avahi-daemon
+      # SSH hardening
+      - sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+      - systemctl restart ssh
+      # UFW
+      - ufw default deny incoming
+      - ufw default allow outgoing
+      - ufw allow 22/tcp
+      - ufw allow 51820/udp
+      - ufw allow 8080/tcp
+      - echo "y" | ufw enable
+      # Метка готовности
+      - echo "titan ready $(date -Is)" > /etc/titan-cloud-init.done
+
+  late-commands:
+    - curtin in-target --target=/target -- systemctl enable ssh
+
+  shutdown: reboot
