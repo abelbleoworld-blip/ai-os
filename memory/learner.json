@@ -1,0 +1,33 @@
+{
+  "lessons": [],
+  "error_fixes": {
+    "файлы": {
+      "error": "Claude ошибка: string indices must be integers. Fallback: используй модуль.команда",
+      "time": "2026-04-22T08:01:50.338469",
+      "fixed": false
+    },
+    "список процессов": {
+      "error": "Claude ошибка: string indices must be integers. Fallback: используй модуль.команда",
+      "time": "2026-04-22T08:01:53.132481",
+      "fixed": false
+    },
+    "сеть": {
+      "error": "Claude ошибка: string indices must be integers. Fallback: используй модуль.команда",
+      "time": "2026-04-22T08:01:54.139381",
+      "fixed": false
+    },
+    "проверь здоровье системы": {
+      "error": "Claude ошибка: string indices must be integers. Fallback: используй модуль.команда",
+      "time": "2026-04-22T08:01:54.915726",
+      "fixed": false
+    },
+    "использование памяти": {
+      "error": "Claude ошибка: string indices must be integers. Fallback: используй модуль.команда",
+      "time": "2026-04-22T08:01:55.811748",
+      "fixed": false
+    }
+  },
+  "learned_mappings": {},
+  "feedback_scores": [],
+  "updated": "2026-04-23T15:10:07.414674"
+}

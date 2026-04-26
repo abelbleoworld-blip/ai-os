@@ -71,7 +71,7 @@ class ClaudeBrain:
         knowledge_text = "\n".join(knowledge_summary[:20]) if knowledge_summary else "  Пока пусто"
 
         return f"""Ты — AI-OS, интеллектуальная операционная система. Ты управляешь компьютером через модули.
-Ты работаешь в Docker-контейнере на Linux (aarch64). Используй psutil-команды, не powershell.
+Ты работаешь в Docker-контейнере на Linux (x86_64, iMac 27"). Хост — macOS. Используй linux-команды внутри контейнера, для хоста — через mesh/Abel Agent.
 
 ДОСТУПНЫЕ МОДУЛИ:
 {modules_text}
@@ -136,10 +136,19 @@ class ClaudeBrain:
                 # Claude хочет вызвать модули
                 results = []
                 for action in actions_result["actions"]:
-                    module = action["module"]
-                    command = action["command"]
+                    if not isinstance(action, dict):
+                        continue
+                    module = action.get("module", "")
+                    command = action.get("command", "")
+                    if not module or not command:
+                        continue
                     args = action.get("args", {})
-                    r = await self.bus.send(module, command, **args)
+                    if not isinstance(args, dict):
+                        args = {}
+                    try:
+                        r = await self.bus.send(module, command, **args)
+                    except Exception as e:
+                        r = {"error": str(e)}
                     results.append({"module": module, "command": command, "result": r})
 
                 comment = actions_result.get("comment", "")
@@ -173,7 +182,10 @@ class ClaudeBrain:
 
         except Exception as e:
             # Claude недоступен — fallback на старый мозг
+            import traceback
             error_msg = str(e)
+            tb = traceback.format_exc()
+            print(f"[CLAUDE ERROR] {error_msg}\n{tb}")
             if "rate_limit" in error_msg.lower() or "credit" in error_msg.lower():
                 return f"API лимит: {error_msg}. Используй прямые команды (модуль.команда)"
             return f"Claude ошибка: {error_msg}. Fallback: используй модуль.команда"
